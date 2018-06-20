@@ -1,5 +1,59 @@
 #include "microcode.h"
 
+unsigned short int readFromRegister(int registerID){
+        if(registerID < 0 || registerID > 7){
+                sendError("We just tried to read outside the register bank!");
+                printf("PC: %d\n", readFromRegister(7));
+                printf("Register ID: %d\n", registerID);
+        }
+        // Are we in an interrupt routine?
+        if ((pds16.registers[6]&0x20) != 0 && registerID < 6){
+                return pds16.iregisters[registerID];
+        }else{
+                return pds16.registers[registerID];
+        }
+}
+
+void writeToRegister(int registerID, unsigned short int value){
+        if(registerID < 0 || registerID > 7){
+                printf("Register ID: %d\n", registerID);
+                printf("PC: %d\n", readFromRegister(7));
+                sendError("We just tried to write outside the register bank!");
+        }
+        // Are we in an interrupt routine?
+        if ((pds16.registers[6]&0x20) != 0 && registerID < 6){
+                pds16.iregisters[registerID] = value;
+        }else{
+                pds16.registers[registerID] = value;
+        }
+}
+
+void enterInterruption(){
+        if ((readFromRegister(6)&0x10) != 0){
+                // Copy PSW to iR0
+                pds16.iregisters[0] = pds16.registers[6];
+                // Set BS
+                writeToRegister(6, 0x20);
+                // Set IE false
+                pds16.register[6] ^= 0x10;
+                // Copy PC to LINK
+                writeToRegister(5, readFromRegister(7));
+                // Put a 2 in PC
+                writeToRegister(7, 2);
+        }else{
+                sendWarning("Just tried to enter the Interruption routine without IE bit set!");
+        }
+}
+
+void exitInterruption(){
+        // Move LINK to PC
+        writeToRegister(7, readFromRegister(5));
+        // Move iR0 to PSW
+        writeToRegister(6, readFromRegister(0));
+        // Set IE back to true
+        pds16.registers[6] ^= 0x10;
+}
+
 void writeToRam(unsigned char * mem, char * Line, int addressToWrite){
         int limit = (addressToWrite & 0xff0000) >> 16;
         addressToWrite = addressToWrite & 0xffff;

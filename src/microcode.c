@@ -4,7 +4,6 @@ bool parity(int number){
         int parity = number & 1;
         for(int i = 1; i <= 15; i++){
                 parity += ((1 << i)&number)>>i;
-                //printf("%d\n", parity);
         }
         parity = parity & 0x1;
         return parity;
@@ -225,7 +224,7 @@ void shl(int code){
         int c4 = (code>>6) & 0b1111;
         int in = (code>>10) & 0b1;
         // Flags = 0 (GE = 0)
-        pds16.registers[6] = 0;
+        pds16.registers[6] &= 0x10;
         // Carry
         pds16.registers[6] |= ((pds16.registers[rm]&(0b1<<(16-c4)))>>14);
         // Operation
@@ -246,7 +245,7 @@ void shr(int code){
         int c4 = (code>>6) & 0b1111;
         int in = (code>>10) & 0b1;
         // Flags = 0 (GE = 0)
-        pds16.registers[6] = 0;
+        pds16.registers[6] &= 0x10;
         // Carry
         pds16.registers[6] |= ((pds16.registers[rm]>>(c4-1))&1)<<1;
         // Operation
@@ -263,7 +262,7 @@ void shr(int code){
 
 void rr(int code){
         // Flags = 0 (GE = 0)
-        pds16.registers[6] = 0;
+        pds16.registers[6] &= 0x10;
         int rd = code & 0b111;
         int rm = (code>>3) & 0b111;
         int c4 = (code>>6) & 0b1111;
@@ -329,6 +328,6 @@ void iret(){
         if((pds16.registers[6] & 0x20) == 0){
                 sendError("Tried to return from an interrupt routine while not in one!\n");
         }else{
-                printf("TODO: Implementar iret\n");
+                exitInterruption();
         }
 }
