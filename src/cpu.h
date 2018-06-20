@@ -47,3 +47,7 @@ void *killThread();
 void *run();
 void initializePDS16();
 int parseHexFile(unsigned char * mem, FILE *fileopened);
+unsigned short int readFromRegister(int registerID);
+void writeToRegister(int registerID, unsigned short int value);
+void enterInterruption();
+void exitInterruption();

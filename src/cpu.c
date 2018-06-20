@@ -35,7 +35,8 @@ void enterInterruption(){
                 // Set BS
                 writeToRegister(6, 0x20);
                 // Set IE false
-                pds16.register[6] ^= 0x10;
+                writeToRegister(6, readFromRegister(6)^0x10);
+                //pds16.registers[6] ^= 0x10;
                 // Copy PC to LINK
                 writeToRegister(5, readFromRegister(7));
                 // Put a 2 in PC
