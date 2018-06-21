@@ -97,17 +97,62 @@ void menu(){
                         menu();
                 }
         }
+        if (strcmp(option, "onf") == 0){
+                if(sscanf(input, "%s %s", option, option) == 2){
+                        FILE *file;
+                        file = fopen(option, "r");
+                        if(!file){
+                                printf(YELLOW "File '%s' not found!\n", option);
+                                menu();
+                        }
+                        erasePDS(pds16.mem);
+                        parseHexFile(pds16.mem, file);
+                        fclose(file);
+                        menu();
+                }else{
+                        printf("Please specify the name of the file: ");
+                        if (fgets(input, sizeof(input), stdin) != NULL){
+                                if(sscanf(input, "%s", option) == 1){
+                                        FILE *file;
+                                        file = fopen(option, "r");
+                                        if(!file){
+                                                printf(YELLOW "File '%s' not found!\n", option);
+                                                menu();
+                                        }
+                                        erasePDS(pds16.mem);
+                                        parseHexFile(pds16.mem, file);
+                                        fclose(file);
+                                        menu();
+                                }
+                        }
+                }
+        }
         if (strcmp(option, "dump") == 0){
                 dumpMemory(pds16.mem, MEMSIZE);
                 menu();
         }
-        if (strcmp(option, "pm") == 0){
+        if (strcmp(option, "mp") == 0){
+                // Memory Print
                 if(sscanf(input, "%s %i %i", option, &int1, &int2) == 3){
                         printMem(pds16.mem, MEMSIZE, int1, int2);
                 }else if (sscanf(input, "%s %i", option, &int1) == 2){
                         printMem(pds16.mem, MEMSIZE, readFromRegister(7), int1);
                 }else{
                         printMem(pds16.mem, MEMSIZE, 0, MEMSIZE);
+                }
+                menu();
+        }
+        if (strcmp(option, "pmb") == 0){
+                // Patch memory byte
+                if (sscanf(input, "%s %i %i", option, &int1, &int2) == 3){
+                        patchMemory(int1, int2, true);
+                }
+                menu();
+        }
+        if (strcmp(option, "pmw") == 0){
+                // Patch memory word
+                if (sscanf(input, "%s %i %i", option, &int1, &int2) == 3){
+                        patchMemory(int1, int2, false);
                 }
                 menu();
         }
@@ -131,13 +176,14 @@ void menu(){
                 writeToRegister(7, readFromRegister(7)+2);
                 menu();
         }
-        printf("\nThat command is unknown!\n");
+        printf("\nThe command '%s' is unknown!\n", option);
         menu();
 }
 
-// TODO: Criar suporte para novos ficheiros
+// TODO: Criar suporte para novos ficheiros DONE
 // TODO: Criar um novo menu KINDA
 // TODO: Disassemble
 // TODO: Dump memory to a file DONE
 // TODO: Separar e melhor hierarquia dos ficheiros KINDA
 // TODO: Melhorar a implementação do ISA
+// TODO: Patch Memory DONE

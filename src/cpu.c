@@ -73,16 +73,65 @@ void exitInterruption(){
         sendWarning("Exited the interrupt routine!");
 }
 
+void erasePDS(unsigned char * mem){
+        sendWarning("Erasing the RAM...\n");
+        int spaces = 30;
+        for(int i = 0; i < MEMSIZE; i++){
+                printf("\rProcess: [");
+                float progress = i/(double)MEMSIZE;
+                for(int j = 0; j < progress*spaces; j++){
+                        printf("=");
+                }
+                for(int j = 0; j < (spaces-progress*spaces)-1; j++){
+                        if(j == 0){
+                                printf(">");
+                        }
+                        printf(" ");
+                }
+                printf("] %.2f%%", progress*100);
+                mem[i] = 0;
+        }
+        printf("\nRAM sucessfully erased!\n");
+
+        sendWarning("Resetting the registers!\n");
+        for (int i = 0; i < NUM_REGISTERS; i++){
+                pds16.registers[i] = 0;
+        }
+        for (int i = 0; i < NUM_IREGISTERS; i++){
+                pds16.iregisters[i] = 0;
+        }
+        printf("\nRegisters sucessfully resetted!\n");
+}
+
+void patchMemory(int address, int value, bool byte){
+        if (address > 0x7fff || address < 0x0){
+                printf("Cannot write 0x%04x to 0x%04x\n", value,  address);
+                return;
+        }
+        if (byte){
+                pds16.mem[address] = value&0xff;
+                printf("Sucessfully patched memory address 0x%02x with 0x%02x!\n", address, value&0xff);
+        }else{
+                address &= 0xfffe; // Let's remove the last byte
+                pds16.mem[address] = (value&0xff00)>>8;
+                pds16.mem[address+1] = (value&0xff);
+                printf("Sucessfully patched memory address 0x%02x and 0x%02x with 0x%02x and 0x%02x!\n", address, address+1, (value&0xff00)>>8, value&0xff);
+        }
+
+
+        return;
+}
+
 void writeToRam(unsigned char * mem, char * Line, int addressToWrite){
         int limit = (addressToWrite & 0xff0000) >> 16;
         addressToWrite = addressToWrite & 0xffff;
-        printf("Writing %d bytes to RAM Address: %04x\n", limit, addressToWrite);
+        printf("Writing %d bytes to RAM Address: 0x%04x\n", limit, addressToWrite);
         for (int i = 8; i < limit*2+8; i+=2){
                 pds16.mem[addressToWrite] = Line[i]*16+Line[i+1];
                 printf("%02x ", pds16.mem[addressToWrite]);
                 addressToWrite++;
         }
-        printf("\n\n");
+        printf("\n");
 }
 
 int getVal(char c){

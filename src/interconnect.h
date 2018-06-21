@@ -12,6 +12,8 @@ void dumpMemory(unsigned char * memory, long unsigned int memSize);
 void writeToRegister(int registerID, short int value);
 void enterInterruption();
 void exitInterruption();
+void erasePDS(unsigned char * mem);
+void patchMemory(int address, int value, bool byte);
 void writeToRam(unsigned char * mem, char * Line, int addressToWrite);
 int getVal(char c);
 int getAddressFromLine(char * Line);
