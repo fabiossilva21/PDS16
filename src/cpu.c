@@ -14,6 +14,20 @@ short int readFromRegister(int registerID){
         }
 }
 
+void dumpMemory(unsigned char * memory, int memSize){
+        FILE *fp = fopen("memory.bin", "w+");
+        if(!fp) {
+                sendError("Could not create memory.bin!");
+        }
+        sendWarning("Dumping memory to memory.bin...");
+        for (int i = 0; i < memSize; i++ ){
+                fprintf(fp, "%c", memory[i]);
+        }
+        sendWarning("Memory dumped sucessfully!");
+        printf(GREEN "Dumped: "RESET"%d bytes\n", (memSize)*sizeof(char));
+        fclose(fp);
+}
+
 void writeToRegister(int registerID, short int value){
         if(registerID < 0 || registerID > 7){
                 printf("Register ID: %d\n", registerID);
@@ -258,16 +272,24 @@ void loop(){
                         sendWarning("Exiting...\n");
                         exit(1);
                 }
-                int converted = sscanf(input, "%s %d %d", option, &int1, &int2);
-                if(converted == 3){
+                // Commands with "string Hnumber Hnumber"
+                if(sscanf(input, "%s 0x%x 0x%x", option, &int1, &int2) == 3){
                         if (input[0] == 'd'){
                                 printMem(pds16.mem, MEMSIZE, int1, int2);
                                 loop();
                         }
                 }
-                converted = sscanf(input, "%s %c%d %d", option, option, &int1, &int2);
-                if (converted == 4) {
-                        if (input[0] == 's'){
+                // Commands with "string Dnumber Dnumber"
+                if(sscanf(input, "%s %d %d", option, &int1, &int2) == 3){
+                        if (input[0] == 'd'){
+                                printMem(pds16.mem, MEMSIZE, int1, int2);
+                                loop();
+                        }
+                }
+                // Commands with "string charDnumber Hnumber"
+                if (sscanf(input, "%s %c%d 0x%x", option, option, &int1, &int2) == 4) {
+                        if (input[0] == 's' && input[1] == 'r'){
+                                // Set registers
                                 if(int1 > 7 || int1 < 0){
                                         sendWarning("Tried to set a non-existant register.\n");
                                         loop();
@@ -276,31 +298,61 @@ void loop(){
                                 loop();
                         }
                 }
-                converted = sscanf(input, "%s %s %d", option, option, &int1);
-                if (converted == 3){
-                        if (tolower(input[0]) == 'd' && input[2] == '*'){
+                // Commands with "string charDnumber Dnumber"
+                if (sscanf(input, "%s %c%d %d", option, option, &int1, &int2) == 4) {
+                        if (input[0] == 's' && input[1] == 'r'){
+                                if(int1 > 7 || int1 < 0){
+                                        sendWarning("Tried to set a non-existant register.\n");
+                                        loop();
+                                }
+                                pds16.registers[int1] = int2;
+                                loop();
+                        }
+                }
+                // Commands with "string string Hnumber"
+                if (sscanf(input, "%s %s 0x%x", option, option, &int1)){
+                        if (input[0] == 'd' && input[2] == '*'){
+                                // Print memory from PC to int1
                                 printMem(pds16.mem, MEMSIZE, pds16.registers[7], int1);
                                 loop();
                         }
-                }else if (converted){
+                }
+                // Commands with "string string Dnumber"
+                if (sscanf(input, "%s %s %d", option, option, &int1)){
+                        if (input[0] == 'd' && input[2] == '*'){
+                                // Print memory from PC to int1
+                                printMem(pds16.mem, MEMSIZE, pds16.registers[7], int1);
+                                loop();
+                        }
+                }
+                // Other Commands
+                if (sscanf(input, "%s", option)){
                         if (input[0] == 'r'){
+                                // Print registers
                                 printRegisters(pds16.registers);
                                 loop();
                         }else if (input[0] == 'm'){
+                                // Print memory
                                 printMem(pds16.mem, MEMSIZE, 0, MEMSIZE);
                                 loop();
                         }else if (input[0] == 's'){
-                                int opp =(pds16.mem[pds16.registers[7]]<<8)+pds16.mem[pds16.registers[7]+1];
+                                // Step
+                                int opp = (pds16.mem[pds16.registers[7]]<<8)+pds16.mem[pds16.registers[7]+1];
                                 decodeOp(opp);
                                 pds16.registers[7]+=2;
                                 loop();
                         }else if (input[0] == 'a'){
+                                // Automated Mode
                                 pthread_create(&tids[1], NULL, killThread, NULL);
                                 pthread_create(&tids[2], NULL, run, NULL);
                                 pthread_join(tids[1], NULL);
                                 pthread_join(tids[2], NULL);
                                 loop();
+                        }else if (strcmp(input, "dump")){
+                                dumpMemory(pds16.mem, MEMSIZE);
+                                loop();
                         }else if (input[0] == 'i'){
+                                // Simulate interrupt
                                 enterInterruption();
                                 loop();
                         }

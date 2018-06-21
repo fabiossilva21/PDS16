@@ -6,10 +6,10 @@ bool carryBorrow(short int number1, short int number2, bool isSum){
                 if(((number1&number2)&0x8000) != 0){
                         return 1;
                 }
-                if((sum&0x8000) == 0 && (number1)&0x8000 != 0){
+                if((sum&0x8000) == 0 && ((number1)&0x8000) != 0){
                         return 1;
                 }
-                if((sum&0x8000) == 0 && (number2)&0x8000 != 0){
+                if((sum&0x8000) == 0 && ((number2)&0x8000) != 0){
                         return 1;
                 }
         }else{
@@ -18,10 +18,10 @@ bool carryBorrow(short int number1, short int number2, bool isSum){
                 if(((number1&number2)&0x8000) != 0){
                         return 1^!isSum;
                 }
-                if((sub&0x8000) == 0 && (number1)&0x8000 != 0){
+                if((sub&0x8000) == 0 && ((number1)&0x8000) != 0){
                         return 1^!isSum;
                 }
-                if((sub&0x8000) == 0 && (number2)&0x8000 != 0){
+                if((sub&0x8000) == 0 && ((number2)&0x8000) != 0){
                         return 1^!isSum;
                 }
                 return 0^!isSum;
