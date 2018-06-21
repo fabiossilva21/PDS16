@@ -1,6 +1,6 @@
 #include "microcode.h"
 
-unsigned short int readFromRegister(int registerID){
+short int readFromRegister(int registerID){
         if(registerID < 0 || registerID > 7){
                 sendError("We just tried to read outside the register bank!");
                 printf("PC: %d\n", readFromRegister(7));
@@ -14,7 +14,7 @@ unsigned short int readFromRegister(int registerID){
         }
 }
 
-void writeToRegister(int registerID, unsigned short int value){
+void writeToRegister(int registerID, short int value){
         if(registerID < 0 || registerID > 7){
                 printf("Register ID: %d\n", registerID);
                 printf("PC: %d\n", readFromRegister(7));
@@ -22,9 +22,9 @@ void writeToRegister(int registerID, unsigned short int value){
         }
         // Are we in an interrupt routine?
         if ((pds16.registers[6]&0x20) != 0 && registerID < 6){
-                pds16.iregisters[registerID] = value;
+                pds16.iregisters[registerID] = value&0xFFFF;
         }else{
-                pds16.registers[registerID] = value;
+                pds16.registers[registerID] = value&0xFFFF;
         }
 }
 
@@ -242,7 +242,7 @@ int decodeOp(unsigned int code){
 }
 
 void loop(){
-        printf("\n>");
+        printf("\n0x%04x>", readFromRegister(7));
         char input[255] = {0};
         char option[10] = {0};
         int int1;
@@ -293,12 +293,15 @@ void loop(){
                                 int opp =(pds16.mem[pds16.registers[7]]<<8)+pds16.mem[pds16.registers[7]+1];
                                 decodeOp(opp);
                                 pds16.registers[7]+=2;
-                                printf("Actual PC: %04x", pds16.registers[7]);
+                                loop();
                         }else if (input[0] == 'a'){
                                 pthread_create(&tids[1], NULL, killThread, NULL);
                                 pthread_create(&tids[2], NULL, run, NULL);
                                 pthread_join(tids[1], NULL);
                                 pthread_join(tids[2], NULL);
+                                loop();
+                        }else if (input[0] == 'i'){
+                                enterInterruption();
                                 loop();
                         }
                 }

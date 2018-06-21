@@ -35,8 +35,8 @@ bool runToBeKilled;
 
 typedef struct {
         unsigned char mem[MEMSIZE];
-        unsigned short int registers[NUM_REGISTERS];
-        unsigned short int iregisters[NUM_IREGISTERS];
+        short int registers[NUM_REGISTERS];
+        short int iregisters[NUM_IREGISTERS];
 } PDS16;
 
 PDS16 pds16;
@@ -47,7 +47,7 @@ void *killThread();
 void *run();
 void initializePDS16();
 int parseHexFile(unsigned char * mem, FILE *fileopened);
-unsigned short int readFromRegister(int registerID);
-void writeToRegister(int registerID, unsigned short int value);
+short int readFromRegister(int registerID);
+void writeToRegister(int registerID, short int value);
 void enterInterruption();
 void exitInterruption();

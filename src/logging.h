@@ -11,5 +11,5 @@
 void sendWarning(char c[]);
 void sendError(char c[]);
 void printMem(unsigned char * mem, int memSize, int beginning, int end);
-void printRegisters(unsigned short int * registers);
-void printPSW(unsigned short int PSW);
+void printRegisters(short int * registers);
+void printPSW(short int PSW);

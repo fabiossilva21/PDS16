@@ -11,16 +11,16 @@ void sendError(char c[]){
         exit(-1);
 }
 
-void printRegisters(unsigned short int * registers){
-        printf("r0       : 0x%04x\n", registers[0]);
-        printf("r1       : 0x%04x\n", registers[1]);
-        printf("r2       : 0x%04x\n", registers[2]);
-        printf("r3       : 0x%04x\n", registers[3]);
-        printf("r4       : 0x%04x\n", registers[4]);
-        printf("r5 (LINK): 0x%04x\n", registers[5]);
-        printf("r6 (PSW) : 0x%04x ", registers[6]);
+void printRegisters(short int * registers){
+        printf("r0       : 0x%04hx\n", registers[0]);
+        printf("r1       : 0x%04hx\n", registers[1]);
+        printf("r2       : 0x%04hx\n", registers[2]);
+        printf("r3       : 0x%04hx\n", registers[3]);
+        printf("r4       : 0x%04hx\n", registers[4]);
+        printf("r5 (LINK): 0x%04hx\n", registers[5]);
+        printf("r6 (PSW) : 0x%04hx ", registers[6]);
         printPSW(registers[6]);
-        printf("r7 (PC)  : 0x%04x\n", registers[7]);
+        printf("r7 (PC)  : 0x%04hx\n", registers[7]);
 }
 
 void printMem(unsigned char * mem, int memSize, int beginning, int end) {
@@ -51,7 +51,7 @@ void printMem(unsigned char * mem, int memSize, int beginning, int end) {
         }
 }
 
-void printPSW(unsigned short int PSW){
+void printPSW(short int PSW){
         bool BS = (PSW & 0b100000) >> 5;
         bool IE = (PSW & 0b10000) >> 4;
         bool P  = (PSW & 0b1000) >> 3;
