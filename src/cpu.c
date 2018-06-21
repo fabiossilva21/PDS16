@@ -1,5 +1,9 @@
 #include "microcode.h"
 
+int breakpoints[MAX_BREAKPOINTS-1] = {0xFFFFFFFF};
+int breakpointCounter = 0;
+bool breakpointHit = false;
+
 short int readFromRegister(int registerID){
         if(registerID < 0 || registerID > 7){
                 sendError("We just tried to read outside the register bank!");
@@ -14,7 +18,7 @@ short int readFromRegister(int registerID){
         }
 }
 
-void dumpMemory(unsigned char * memory, int memSize){
+void dumpMemory(unsigned char * memory, long unsigned int memSize){
         FILE *fp = fopen("memory.bin", "w+");
         if(!fp) {
                 sendError("Could not create memory.bin!");
@@ -124,12 +128,20 @@ void initializePDS16(){
         memset(pds16.mem, 0x00, MEMSIZE*sizeof(unsigned char));
         memset(pds16.registers, 0x00, NUM_REGISTERS*sizeof(unsigned short));
         memset(pds16.iregisters, 0x00, NUM_IREGISTERS*sizeof(unsigned short));
+        memset(breakpoints, 0xFFFFFFFF, MAX_BREAKPOINTS*sizeof(int));
 }
 
 void *run(){
         printf(GREEN "NOTICE: " RESET "Press - to end the run routine.\n");
         for(;;){
-                if(runToBeKilled){
+                for (int i = 0; i < breakpointCounter; i++){
+                        if (readFromRegister(7) == breakpoints[i]){
+                                breakpointHit = true;
+                                printf(RED "\n\nHit breakpoint #%d at memory address: 0x%04x\n" RESET, i, breakpoints[i]);
+                                printf("\n\nPress ENTER to continue\n");
+                        }
+                }
+                if(runToBeKilled || breakpointHit){
                         runToBeKilled = false;
                         pthread_exit(NULL);
                 }
@@ -146,11 +158,15 @@ void *killThread(){
                         ch[0] = tolower(ch[0]);
                         if(ch[0] == '-'){
                                 runToBeKilled = true;
-                                while(runToBeKilled)
+                                while(runToBeKilled){
+
+                                }
                                 pthread_exit(NULL);
-                                loop();
+                                // loop();
                         }else if(ch[0] == 'r'){
                                 printRegisters(pds16.registers);
+                        }else if (breakpointHit){
+                                pthread_exit(NULL);
                         }else{
                                 sendWarning("Running in auto mode. No commands accepted. Press - to exit or 'r' to see the registers");
                         }
@@ -310,11 +326,25 @@ void loop(){
                         }
                 }
                 // Commands with "string string Hnumber"
-                if (sscanf(input, "%s %s 0x%x", option, option, &int1)){
+                if (sscanf(input, "%s %s 0x%x", option, option, &int1) == 3){
                         if (input[0] == 'd' && input[2] == '*'){
                                 // Print memory from PC to int1
                                 printMem(pds16.mem, MEMSIZE, pds16.registers[7], int1);
                                 loop();
+                        }else if (input[0] == 'b'){
+                                if(input[1] == 'c'){
+                                        if(breakpointCounter != MAX_BREAKPOINTS){
+                                                breakpoints[breakpointCounter] = int1;
+                                                breakpointCounter++;
+                                                printf(GREEN "Added a breakpoint at: " RESET "0x%04x\n", int1);
+                                        }else{
+                                                sendWarning("No more breakpoints can be added! Remove some by doing 'bd * id', to get the ids do 'b'.");
+                                        }
+                                        loop();
+                                }else if (input[1] == 'd'){
+                                        breakpoints[int1] = 0xFFFFFFFF;
+                                        loop();
+                                }
                         }
                 }
                 // Commands with "string string Dnumber"
@@ -348,12 +378,23 @@ void loop(){
                                 pthread_join(tids[1], NULL);
                                 pthread_join(tids[2], NULL);
                                 loop();
-                        }else if (strcmp(input, "dump")){
+                        }else if (strcmp(input, "dump") == 0){
                                 dumpMemory(pds16.mem, MEMSIZE);
                                 loop();
                         }else if (input[0] == 'i'){
                                 // Simulate interrupt
                                 enterInterruption();
+                                loop();
+                        }else if (input[0] == 'b'){
+                                // Show breakpoints
+                                if(breakpointCounter == 0 && input[2] != '-'){
+                                        printf("You have no breakpoints\n");
+                                        loop();
+                                }
+                                printf("\nBreakpoints:\n");
+                                for (int i = 0; i < ((input[2] == '-') ? MAX_BREAKPOINTS : breakpointCounter); i++){
+                                        printf("ID: %d = 0x%04x\n", i, breakpoints[i]);
+                                }
                                 loop();
                         }
                 }

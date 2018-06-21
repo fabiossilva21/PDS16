@@ -9,6 +9,8 @@
 enum { MEMSIZE = (int)pow(2, ADDRESS_BITS-1) };
 #define NUM_REGISTERS   8
 #define NUM_IREGISTERS  5
+#define MAX_BREAKPOINTS 5
+
 char lastcommand[255];
 
 pthread_t tids[2];
