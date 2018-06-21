@@ -1,7 +1,5 @@
 #include "microcode.h"
 
-int breakpoints[MAX_BREAKPOINTS-1] = {0xFFFFFFFF};
-int breakpointCounter = 0;
 bool breakpointHit = false;
 
 short int readFromRegister(int registerID){
@@ -28,7 +26,7 @@ void dumpMemory(unsigned char * memory, long unsigned int memSize){
                 fprintf(fp, "%c", memory[i]);
         }
         sendWarning("Memory dumped sucessfully!");
-        printf(GREEN "Dumped: "RESET"%d bytes\n", (memSize)*sizeof(char));
+        printf(GREEN "Dumped: "RESET"%lu bytes\n", (memSize)*sizeof(char));
         fclose(fp);
 }
 
@@ -50,27 +48,29 @@ void enterInterruption(){
         if ((readFromRegister(6)&0x10) != 0){
                 // Copy PSW to iR0
                 pds16.iregisters[0] = pds16.registers[6];
-                // Set BS
+                // Set BS and set IE to false
                 writeToRegister(6, 0x20);
-                // Set IE false
-                writeToRegister(6, readFromRegister(6)^0x10);
-                //pds16.registers[6] ^= 0x10;
                 // Copy PC to LINK
                 writeToRegister(5, readFromRegister(7));
                 // Put a 2 in PC
                 writeToRegister(7, 2);
+                sendWarning("Entered the interrupt routine!");
+        }else if ((readFromRegister(6) & 0x20) != 0){
+                sendWarning("We cannot enter an interrupt routine while being in one!");
         }else{
                 sendWarning("Just tried to enter the Interruption routine without IE bit set!");
         }
 }
 
 void exitInterruption(){
+        if ((readFromRegister(6)&0x20) == 0){
+                sendError("We got out of scope and tried to exit an interrupt routine without being in one!");
+        }
         // Move LINK to PC
         writeToRegister(7, readFromRegister(5));
         // Move iR0 to PSW
         writeToRegister(6, readFromRegister(0));
-        // Set IE back to true
-        pds16.registers[6] ^= 0x10;
+        sendWarning("Exited the interrupt routine!");
 }
 
 void writeToRam(unsigned char * mem, char * Line, int addressToWrite){
@@ -128,13 +128,14 @@ void initializePDS16(){
         memset(pds16.mem, 0x00, MEMSIZE*sizeof(unsigned char));
         memset(pds16.registers, 0x00, NUM_REGISTERS*sizeof(unsigned short));
         memset(pds16.iregisters, 0x00, NUM_IREGISTERS*sizeof(unsigned short));
-        memset(breakpoints, 0xFFFFFFFF, MAX_BREAKPOINTS*sizeof(int));
+        memset(breakpoints, 0xFFFFFFFF, (MAX_BREAKPOINTS-1)*sizeof(int));
+        memset(&breakpointCounter, 0, sizeof(int));
 }
 
 void *run(){
         printf(GREEN "NOTICE: " RESET "Press - to end the run routine.\n");
         for(;;){
-                for (int i = 0; i < breakpointCounter; i++){
+                for (int i = 0; i < MAX_BREAKPOINTS-1; i++){
                         if (readFromRegister(7) == breakpoints[i]){
                                 breakpointHit = true;
                                 printf(RED "\n\nHit breakpoint #%d at memory address: 0x%04x\n" RESET, i, breakpoints[i]);
@@ -162,7 +163,6 @@ void *killThread(){
 
                                 }
                                 pthread_exit(NULL);
-                                // loop();
                         }else if(ch[0] == 'r'){
                                 printRegisters(pds16.registers);
                         }else if (breakpointHit){
@@ -175,7 +175,6 @@ void *killThread(){
 }
 
 int decodeOp(unsigned int code){
-        //printf(BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(code));
         int opCode = (code & (0b11111<<11))>>11;
         switch (opCode) {
                 case 0b00000:
@@ -269,136 +268,4 @@ int decodeOp(unsigned int code){
                         exit(-1);
         }
         return 0;
-}
-
-void loop(){
-        printf("\n0x%04x>", readFromRegister(7));
-        char input[255] = {0};
-        char option[10] = {0};
-        int int1;
-        int int2;
-        if (fgets(input, sizeof(input), stdin) != NULL){
-                if(input[0] != '\n'){
-                        strcpy(lastcommand, input);
-                }else{
-                        strcpy(input, lastcommand);
-                }
-
-                if(input[0] == 'e'){
-                        sendWarning("Exiting...\n");
-                        exit(1);
-                }
-                // Commands with "string Hnumber Hnumber"
-                if(sscanf(input, "%s 0x%x 0x%x", option, &int1, &int2) == 3){
-                        if (input[0] == 'd'){
-                                printMem(pds16.mem, MEMSIZE, int1, int2);
-                                loop();
-                        }
-                }
-                // Commands with "string Dnumber Dnumber"
-                if(sscanf(input, "%s %d %d", option, &int1, &int2) == 3){
-                        if (input[0] == 'd'){
-                                printMem(pds16.mem, MEMSIZE, int1, int2);
-                                loop();
-                        }
-                }
-                // Commands with "string charDnumber Hnumber"
-                if (sscanf(input, "%s %c%d 0x%x", option, option, &int1, &int2) == 4) {
-                        if (input[0] == 's' && input[1] == 'r'){
-                                // Set registers
-                                if(int1 > 7 || int1 < 0){
-                                        sendWarning("Tried to set a non-existant register.\n");
-                                        loop();
-                                }
-                                pds16.registers[int1] = int2;
-                                loop();
-                        }
-                }
-                // Commands with "string charDnumber Dnumber"
-                if (sscanf(input, "%s %c%d %d", option, option, &int1, &int2) == 4) {
-                        if (input[0] == 's' && input[1] == 'r'){
-                                if(int1 > 7 || int1 < 0){
-                                        sendWarning("Tried to set a non-existant register.\n");
-                                        loop();
-                                }
-                                pds16.registers[int1] = int2;
-                                loop();
-                        }
-                }
-                // Commands with "string string Hnumber"
-                if (sscanf(input, "%s %s 0x%x", option, option, &int1) == 3){
-                        if (input[0] == 'd' && input[2] == '*'){
-                                // Print memory from PC to int1
-                                printMem(pds16.mem, MEMSIZE, pds16.registers[7], int1);
-                                loop();
-                        }else if (input[0] == 'b'){
-                                if(input[1] == 'c'){
-                                        if(breakpointCounter != MAX_BREAKPOINTS){
-                                                breakpoints[breakpointCounter] = int1;
-                                                breakpointCounter++;
-                                                printf(GREEN "Added a breakpoint at: " RESET "0x%04x\n", int1);
-                                        }else{
-                                                sendWarning("No more breakpoints can be added! Remove some by doing 'bd * id', to get the ids do 'b'.");
-                                        }
-                                        loop();
-                                }else if (input[1] == 'd'){
-                                        breakpoints[int1] = 0xFFFFFFFF;
-                                        loop();
-                                }
-                        }
-                }
-                // Commands with "string string Dnumber"
-                if (sscanf(input, "%s %s %d", option, option, &int1)){
-                        if (input[0] == 'd' && input[2] == '*'){
-                                // Print memory from PC to int1
-                                printMem(pds16.mem, MEMSIZE, pds16.registers[7], int1);
-                                loop();
-                        }
-                }
-                // Other Commands
-                if (sscanf(input, "%s", option)){
-                        if (input[0] == 'r'){
-                                // Print registers
-                                printRegisters(pds16.registers);
-                                loop();
-                        }else if (input[0] == 'm'){
-                                // Print memory
-                                printMem(pds16.mem, MEMSIZE, 0, MEMSIZE);
-                                loop();
-                        }else if (input[0] == 's'){
-                                // Step
-                                int opp = (pds16.mem[pds16.registers[7]]<<8)+pds16.mem[pds16.registers[7]+1];
-                                decodeOp(opp);
-                                pds16.registers[7]+=2;
-                                loop();
-                        }else if (input[0] == 'a'){
-                                // Automated Mode
-                                pthread_create(&tids[1], NULL, killThread, NULL);
-                                pthread_create(&tids[2], NULL, run, NULL);
-                                pthread_join(tids[1], NULL);
-                                pthread_join(tids[2], NULL);
-                                loop();
-                        }else if (strcmp(input, "dump") == 0){
-                                dumpMemory(pds16.mem, MEMSIZE);
-                                loop();
-                        }else if (input[0] == 'i'){
-                                // Simulate interrupt
-                                enterInterruption();
-                                loop();
-                        }else if (input[0] == 'b'){
-                                // Show breakpoints
-                                if(breakpointCounter == 0 && input[2] != '-'){
-                                        printf("You have no breakpoints\n");
-                                        loop();
-                                }
-                                printf("\nBreakpoints:\n");
-                                for (int i = 0; i < ((input[2] == '-') ? MAX_BREAKPOINTS : breakpointCounter); i++){
-                                        printf("ID: %d = 0x%04x\n", i, breakpoints[i]);
-                                }
-                                loop();
-                        }
-                }
-        }
-        sendWarning("What you entered is not a valid command.\n");
-        loop();
 }

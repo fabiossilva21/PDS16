@@ -1,9 +1,8 @@
-#include "logging.h"
 #include <pthread.h>
-#include <ctype.h>
 #include <math.h>
 #include <unistd.h>
 #include <string.h>
+#include "logging.h"
 
 #define ADDRESS_BITS    16
 enum { MEMSIZE = (int)pow(2, ADDRESS_BITS-1) };
@@ -11,9 +10,9 @@ enum { MEMSIZE = (int)pow(2, ADDRESS_BITS-1) };
 #define NUM_IREGISTERS  5
 #define MAX_BREAKPOINTS 5
 
-char lastcommand[255];
+int breakpoints[MAX_BREAKPOINTS];
+int breakpointCounter;
 
-pthread_t tids[2];
 bool runToBeKilled;
 
 #define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c"
@@ -42,14 +41,3 @@ typedef struct {
 } PDS16;
 
 PDS16 pds16;
-
-void loop();
-int decodeOp(unsigned int code);
-void *killThread();
-void *run();
-void initializePDS16();
-int parseHexFile(unsigned char * mem, FILE *fileopened);
-short int readFromRegister(int registerID);
-void writeToRegister(int registerID, short int value);
-void enterInterruption();
-void exitInterruption();
