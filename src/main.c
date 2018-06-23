@@ -176,14 +176,31 @@ void menu(){
                 writeToRegister(7, readFromRegister(7)+2);
                 menu();
         }
+        if ((strcmp(option, "do")) == 0){
+                if (sscanf(input, "%s %i %i", option, &int1, &int2) == 3){
+                        for(int i = int1; i <= int2; i+=2){
+                                int code = (pds16.mem[i]<<8)+pds16.mem[i+1];
+                                printOp(code, i);
+                        }
+                }else if (sscanf(input, "%s %i", option, &int1) == 2){
+                        for(int i = readFromRegister(7); i <= int1+readFromRegister(7); i+=2){
+                                int code = (pds16.mem[i]<<8)+pds16.mem[i+1];
+                                printOp(code, i);
+                        }
+                }else {
+                        int code = (pds16.mem[readFromRegister(7)]<<8)+pds16.mem[readFromRegister(7)+1];
+                        printOp(code, readFromRegister(7));
+                }
+                menu();
+        }
         printf("\nThe command '%s' is unknown!\n", option);
         menu();
 }
 
 // TODO: Criar suporte para novos ficheiros DONE
 // TODO: Criar um novo menu KINDA
-// TODO: Disassemble
+// TODO: Disassemble DONE
 // TODO: Dump memory to a file DONE
 // TODO: Separar e melhor hierarquia dos ficheiros KINDA
-// TODO: Melhorar a implementação do ISA
+// TODO: Melhorar a implementação do ISA KINDA
 // TODO: Patch Memory DONE

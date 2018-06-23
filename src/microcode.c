@@ -287,16 +287,22 @@ void anl(int code){
         int rn = (code>>6) & 0b111;
         bool r = (code>>9) & 0b1;
         bool f = (code>>10) & 0b1;
-        writeToRegister(rd, readFromRegister(rm)&readFromRegister(rn));
-        if(!f){
+        if(r){
+                writeToRegister(rd, readFromRegister(rm)&readFromRegister(rn));
+                if(f){
+                        pds16.registers[6] &= 0x30;
+                        if (readFromRegister(rd) == 0) pds16.registers[6] |= 1;
+                        pds16.registers[6] |= parity(readFromRegister(rd))<<3;
+                }
                 return;
         }
-        pds16.registers[6] &= 0b111101;
-        if((readFromRegister(rm)&readFromRegister(rn)) == 0) {
-                pds16.registers[6] |= 1;
+        if(f){
+                pds16.registers[6] &= 0x30;
+                if((readFromRegister(rm)&readFromRegister(rn)) == 0) {
+                        pds16.registers[6] |= 1;
+                }
+                pds16.registers[6] |= (parity(readFromRegister(rm)&readFromRegister(rn))<<3);
         }
-        pds16.registers[6] |= (parity(readFromRegister(rm)&readFromRegister(rn))<<3);
-        printf("TODO: Flags\n");
 }
 
 void orl(int code){
@@ -305,16 +311,22 @@ void orl(int code){
         int rn = (code>>6) & 0b111;
         bool r = (code>>9) & 0b1;
         bool f = (code>>10) & 0b1;
-        writeToRegister(rd, readFromRegister(rm)|readFromRegister(rn));
-        if(!f){
+        if (r){
+                writeToRegister(rd, readFromRegister(rm)|readFromRegister(rn));
+                if (f){
+                        pds16.registers[6] &= 0x30;
+                        if (readFromRegister(rd) == 0) pds16.registers[6] |= 1;
+                        pds16.registers[6] |= parity(readFromRegister(rd))<<3;
+                }
                 return;
         }
-        pds16.registers[6] &= 0b111101;
-        if((readFromRegister(rm)|readFromRegister(rn)) == 0) {
-                pds16.registers[6] |= 1;
+        if(f){
+                pds16.registers[6] &= 0x30;
+                if((readFromRegister(rm)|readFromRegister(rn)) == 0) {
+                        pds16.registers[6] |= 1;
+                }
+                pds16.registers[6] |= (parity((readFromRegister(rm)|readFromRegister(rn))<<3));
         }
-        pds16.registers[6] |= (parity((readFromRegister(rm)|readFromRegister(rn))<<3));
-        printf("TODO: Flags\n");
 }
 
 void xrl(int code){
@@ -323,16 +335,22 @@ void xrl(int code){
         int rn = (code>>6) & 0b111;
         bool r = (code>>9) & 0b1;
         bool f = (code>>10) & 0b1;
-        writeToRegister(rd, readFromRegister(rm)^readFromRegister(rn));
-        if(!f){
+        if(r){
+                writeToRegister(rd, readFromRegister(rm)^readFromRegister(rn));
+                if(f){
+                        pds16.registers[6] &= 0x30;
+                        pds16.registers[6] |= parity(readFromRegister(rd))<<3;
+                        if (readFromRegister(rd) == 0) pds16.registers[6] |= 1;
+                }
                 return;
         }
-        pds16.registers[6] &= 0b111101;
-        if(readFromRegister(rm)^readFromRegister(rn) == 0) {
-                pds16.registers[6] |= 1;
+        if(f){
+                pds16.registers[6] &= 0x30;
+                if((readFromRegister(rm)^readFromRegister(rn)) == 0) {
+                        pds16.registers[6] |= 1;
+                }
+                pds16.registers[6] |= parity((readFromRegister(rm)^readFromRegister(rn))<<3);
         }
-        pds16.registers[6] |= parity((readFromRegister(rm)^readFromRegister(rn))<<3);
-        printf("TODO: Flags\n");
 }
 
 void not(int code){
@@ -340,15 +358,22 @@ void not(int code){
         int rm = (code>>3) & 0b111;
         bool r = (code>>9) & 0b1;
         bool f = (code>>10) & 0b1;
-        writeToRegister(rd, ~readFromRegister(rm));
-        if(!f){
+        if(r){
+                writeToRegister(rd, ~readFromRegister(rm));
+                if(f){
+                        pds16.registers[6] &= 0x30;
+                        if(readFromRegister(rd) == 0) pds16.registers[6] |= 1;
+                        pds16.registers[6] |= (parity(readFromRegister(rd)<<3));
+                }
                 return;
         }
-        pds16.registers[6] &= 0b111101;
-        if(~(readFromRegister(rm)) == 0) {
-                pds16.registers[6] |= 1;
+        if(f){
+                pds16.registers[6] &= 0x30;
+                if(~(readFromRegister(rm)) == 0) {
+                        pds16.registers[6] |= 1;
+                }
+                pds16.registers[6] |= (parity(~readFromRegister(rm))<<3);
         }
-        pds16.registers[6] |= (parity(~readFromRegister(rm))<<3);
 }
 
 void shl(int code){
@@ -460,7 +485,6 @@ void iret(){
         if((readFromRegister(6) & 0x20) == 0){
                 sendError("Tried to return from an interrupt routine while not in one!\n");
         }else{
-                sendError("Interrupt routine still not implemented =(");
-                // exitInterruption();
+                exitInterruption();
         }
 }

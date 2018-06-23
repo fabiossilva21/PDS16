@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <ctype.h>
+#include <inttypes.h>
 #include "interconnect.h"
 
 #define RESET   "\e[0m"

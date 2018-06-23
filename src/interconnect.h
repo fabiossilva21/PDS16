@@ -5,6 +5,7 @@ void printMem(unsigned char * mem, int memSize, int beginning, int end);
 void printRegisters();
 void printPSW(short int PSW);
 char * toLowerArray(char * array, int sizeArray);
+void printOp(int code, int memoryAddress);
 
 // cpu.c
 short int readFromRegister(int registerID);
