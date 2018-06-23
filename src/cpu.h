@@ -2,18 +2,19 @@
 #include <math.h>
 #include <unistd.h>
 #include <string.h>
+#include <sys/time.h>
 #include "logging.h"
 
 #define ADDRESS_BITS    16
 enum { MEMSIZE = (int)pow(2, ADDRESS_BITS-1) };
 #define NUM_REGISTERS   8
-#define NUM_IREGISTERS  5
+#define NUM_IREGISTERS  6
 #define MAX_BREAKPOINTS 5
 
 int breakpoints[MAX_BREAKPOINTS];
-int breakpointCounter;
 
 bool runToBeKilled;
+int interruptTime;
 
 #define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c"
 #define BYTE_TO_BINARY(byte)  \

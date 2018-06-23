@@ -482,9 +482,5 @@ void jmpl(int code){
 }
 
 void iret(){
-        if((readFromRegister(6) & 0x20) == 0){
-                sendError("Tried to return from an interrupt routine while not in one!\n");
-        }else{
-                exitInterruption();
-        }
+        exitInterruption();
 }

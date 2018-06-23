@@ -2,6 +2,10 @@
 
 bool breakpointHit = false;
 
+float timedifference_msec(struct timeval t0, struct timeval t1){
+    return (t1.tv_sec - t0.tv_sec) * 1000.0f + (t1.tv_usec - t0.tv_usec) / 1000.0f;
+}
+
 short int readFromRegister(int registerID){
         if(registerID < 0 || registerID > 7){
                 sendError("We just tried to read outside the register bank!");
@@ -178,12 +182,22 @@ void initializePDS16(){
         memset(pds16.registers, 0x00, NUM_REGISTERS*sizeof(unsigned short));
         memset(pds16.iregisters, 0x00, NUM_IREGISTERS*sizeof(unsigned short));
         memset(breakpoints, 0xFFFFFFFF, (MAX_BREAKPOINTS-1)*sizeof(int));
-        memset(&breakpointCounter, 0, sizeof(int));
+        memset(&interruptTime, -1, sizeof(int));
 }
 
 void *run(){
+        struct timeval t0;
+        struct timeval t1;
+        gettimeofday(&t0, 0);
         printf(GREEN "NOTICE: " RESET "Press - to end the run routine.\n");
         for(;;){
+                gettimeofday(&t1, 0);
+                if (interruptTime != -1){
+                        if (timedifference_msec(t0, t1) > interruptTime){
+                                gettimeofday(&t0, 0);
+                                enterInterruption();
+                        }
+                }
                 for (int i = 0; i < MAX_BREAKPOINTS-1; i++){
                         if (readFromRegister(7) == breakpoints[i]){
                                 breakpointHit = true;
@@ -197,7 +211,6 @@ void *run(){
                 }
                 int opp = (pds16.mem[pds16.registers[7]]<<8)+pds16.mem[pds16.registers[7]+1];
                 decodeOp(opp);
-                pds16.registers[7]+=2;
         }
 }
 
@@ -227,90 +240,118 @@ int decodeOp(unsigned int code){
         int opCode = (code & (0b11111<<11))>>11;
         switch (opCode) {
                 case 0b00000:
+                        writeToRegister(7, readFromRegister(7)+2);
                         ldi(code);
                         break;
                 case 0b00001:
+                        writeToRegister(7, readFromRegister(7)+2);
                         ldih(code);
                         break;
                 case 0b00010:
+                        writeToRegister(7, readFromRegister(7)+2);
                         ld(code);
                         break;
                 case 0b00011:
+                        writeToRegister(7, readFromRegister(7)+2);
                         ld(code);
                         break;
                 case 0b00110:
+                        writeToRegister(7, readFromRegister(7)+2);
                         st(code);
                         break;
                 case 0b00111:
+                        writeToRegister(7, readFromRegister(7)+2);
                         st(code);
                         break;
                 case 0b10000:
+                        writeToRegister(7, readFromRegister(7)+2);
                         add(code);
                         break;
                 case 0b10010:
+                        writeToRegister(7, readFromRegister(7)+2);
                         adc(code);
                         break;
                 case 0b10001:
+                        writeToRegister(7, readFromRegister(7)+2);
                         sub(code);
                         break;
                 case 0b10011:
+                        writeToRegister(7, readFromRegister(7)+2);
                         sbb(code);
                         break;
                 case 0b10100:
+                        writeToRegister(7, readFromRegister(7)+2);
                         add(code);
                         break;
                 case 0b10110:
+                        writeToRegister(7, readFromRegister(7)+2);
                         adc(code);
                         break;
                 case 0b10101:
+                        writeToRegister(7, readFromRegister(7)+2);
                         sub(code);
                         break;
                 case 0b10111:
+                        writeToRegister(7, readFromRegister(7)+2);
                         sbb(code);
                         break;
                 case 0b11000:
+                        writeToRegister(7, readFromRegister(7)+2);
                         anl(code);
                         break;
                 case 0b11001:
+                        writeToRegister(7, readFromRegister(7)+2);
                         orl(code);
                         break;
                 case 0b11010:
+                        writeToRegister(7, readFromRegister(7)+2);
                         xrl(code);
                         break;
                 case 0b11011:
+                        writeToRegister(7, readFromRegister(7)+2);
                         not(code);
                         break;
                 case 0b11100:
+                        writeToRegister(7, readFromRegister(7)+2);
                         shl(code);
                         break;
                 case 0b11101:
+                        writeToRegister(7, readFromRegister(7)+2);
                         shr(code);
                         break;
                 case 0b11110:
+                        writeToRegister(7, readFromRegister(7)+2);
                         rr(code);
                         break;
                 case 0b01000:
+                        writeToRegister(7, readFromRegister(7)+2);
                         jz(code);
                         break;
                 case 0b01001:
+                        writeToRegister(7, readFromRegister(7)+2);
                         jnz(code);
                         break;
                 case 0b01010:
+                        writeToRegister(7, readFromRegister(7)+2);
                         jc(code);
                         break;
                 case 0b01011:
+                        writeToRegister(7, readFromRegister(7)+2);
                         jnc(code);
                         break;
                 case 0b01100:
+                        writeToRegister(7, readFromRegister(7)+2);
                         jmp(code);
                         break;
                 case 0b01101:
+                        writeToRegister(7, readFromRegister(7)+2);
                         jmpl(code);
                         break;
                 case 0b01110:
                         iret();
                         break;
                 case 0b01111:
+                        writeToRegister(7, readFromRegister(7)+2);
                         break;
                 default:
                         printf(RED "OpCode not recognized %x\n" RESET, opCode);

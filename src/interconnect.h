@@ -25,6 +25,8 @@ void *killThread();
 int decodeOp(unsigned int code);
 
 // main.c
+bool isOnBreakpointList(int address);
+void breakpointManager(int id, int address, bool adding);
 void menu();
 
 // microcode.c

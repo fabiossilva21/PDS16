@@ -1,14 +1,28 @@
 #include "main.h"
 
+bool isOnBreakpointList(int address){
+        for (int i = 0; i < MAX_BREAKPOINTS-1; i++){
+                if (breakpoints[i] == address)
+                        return true;
+        }
+        return false;
+}
+
 void breakpointManager(int id, int address, bool adding){
+        address &= 0xfffe;
         if(adding){
-                if((id+1) != MAX_BREAKPOINTS){
-                        breakpoints[id] = address;
-                        breakpointCounter++;
-                        printf(GREEN "Added a breakpoint at: " RESET "0x%04x\n", address);
-                        }else{
-                        sendWarning("No more breakpoints can be added! Remove some by doing 'bd <id>', to get the ids do 'b'.");
+                if (isOnBreakpointList(address)){
+                        printf(YELLOW "Warning: " RESET "The address 0x%04x is already on the breakpoint list\n", address);
+                        menu();
                 }
+                for(int i = 0; i < MAX_BREAKPOINTS-1; i++){
+                        if(breakpoints[i] == 0xFFFFFFFF){
+                                breakpoints[i] = address;
+                                printf(GREEN "Added a breakpoint at: " RESET "0x%04x\n", address);
+                                menu();
+                        }
+                }
+                sendWarning("No more breakpoints can be added! Remove some by doing 'bd <id>', to get the ids do 'b'.");
         }else{
                 if(breakpoints[id] == 0xFFFFFFFF){
                         printf(YELLOW"Breakpoint #%d is not set!\n"RESET, id);
@@ -36,9 +50,9 @@ int main(int argc, char const *argv[]) {
 }
 
 void menu(){
-        printf("\n0x%04x>", readFromRegister(7));
+        printf(LIGHT_YELLOW "\n0x%04x" RESET ">", readFromRegister(7));
         char input[255] = {0};
-        char option[10] = {0};
+        char option[255] = {0};
         int int1 = 0xFFFFFFFF;
         int int2 = 0xFFFFFFFF;
         if (fgets(input, sizeof(input), stdin) != NULL)
@@ -51,9 +65,6 @@ void menu(){
                 strcpy(input, lastcommand);
         }
 
-        // For some reason the program SEGFAULTS if this isn't here
-        // if(sscanf(input, "%s", option) != 1){
-        // }
         /************************ COMMANDS ***************************/
         if(sscanf(input, "%s", option) != 1){
         }
@@ -87,7 +98,7 @@ void menu(){
         }
         if (strcmp(option, "bc") == 0){
                 if(sscanf(input, "%s %i", option, &int1) == 2){
-                        breakpointManager(breakpointCounter, int1, true);
+                        breakpointManager(0, int1, true);
                         menu();
                 }
         }
@@ -96,6 +107,46 @@ void menu(){
                         breakpointManager(int1, 0, false);
                         menu();
                 }
+        }
+        if (strcmp(option, "clear") == 0){
+                for (int i = 0;  i < 60;  i++, printf("%c", '\n'));
+                menu();
+        }
+        if (strcmp(option, "do") == 0){
+                printf("\n");
+                if (sscanf(input, "%s %i %i", option, &int1, &int2) == 3){
+                        int1 = int1 & 0xfffe;
+                        for(int i = int1; i <= int2; i+=2){
+                                int code = (pds16.mem[i]<<8)+pds16.mem[i+1];
+                                printOp(code, i);
+                        }
+                }else if (sscanf(input, "%s %i", option, &int1) == 2){
+                        int1 = int1 & 0xfffe;
+                        for(int i = readFromRegister(7); i <= int1+readFromRegister(7); i+=2){
+                                int code = (pds16.mem[i]<<8)+pds16.mem[i+1];
+                                printOp(code, i);
+                        }
+                }else {
+                        int code = (pds16.mem[readFromRegister(7)]<<8)+pds16.mem[readFromRegister(7)+1];
+                        printOp(code, readFromRegister(7));
+                }
+                printf("\nLegend: " YELLOW "Constants; " RED "Memory Addresses; " CYAN "Offsets*2\n" RESET);
+                menu();
+        }
+        if (strcmp(option, "dump") == 0){
+                dumpMemory(pds16.mem, MEMSIZE);
+                menu();
+        }
+        if (strcmp(option, "mp") == 0){
+                // Memory Print
+                if(sscanf(input, "%s %i %i", option, &int1, &int2) == 3){
+                        printMem(pds16.mem, MEMSIZE, int1, int2);
+                }else if (sscanf(input, "%s %i", option, &int1) == 2){
+                        printMem(pds16.mem, MEMSIZE, readFromRegister(7), int1);
+                }else{
+                        printMem(pds16.mem, MEMSIZE, 0, MEMSIZE);
+                }
+                menu();
         }
         if (strcmp(option, "onf") == 0){
                 if(sscanf(input, "%s %s", option, option) == 2){
@@ -127,21 +178,6 @@ void menu(){
                         }
                 }
         }
-        if (strcmp(option, "dump") == 0){
-                dumpMemory(pds16.mem, MEMSIZE);
-                menu();
-        }
-        if (strcmp(option, "mp") == 0){
-                // Memory Print
-                if(sscanf(input, "%s %i %i", option, &int1, &int2) == 3){
-                        printMem(pds16.mem, MEMSIZE, int1, int2);
-                }else if (sscanf(input, "%s %i", option, &int1) == 2){
-                        printMem(pds16.mem, MEMSIZE, readFromRegister(7), int1);
-                }else{
-                        printMem(pds16.mem, MEMSIZE, 0, MEMSIZE);
-                }
-                menu();
-        }
         if (strcmp(option, "pmb") == 0){
                 // Patch memory byte
                 if (sscanf(input, "%s %i %i", option, &int1, &int2) == 3){
@@ -156,6 +192,28 @@ void menu(){
                 }
                 menu();
         }
+        if ((strcmp(option, "s") && strcmp(option, "si")) == 0){
+                // Single Step
+                int instruction = (pds16.mem[readFromRegister(7)]<<8)+pds16.mem[readFromRegister(7)+1];
+                decodeOp(instruction);
+                menu();
+        }
+        if (strcmp(option, "set") == 0){
+                if (sscanf(input, "%s %s %i", option, option, &int1) == 3){
+                        if(strcmp(option, "interrupttime") == 0){
+                                interruptTime = int1;
+                                if (int1 == -1){
+                                        printf("interruptTime has been disabled!\n");
+                                        menu();
+                                }
+                                printf("interruptTime has been set to %dms\n", interruptTime);
+                                printf("\nSet interruptTime = -1 to disable it!\n");
+                                menu();
+                        }
+                }
+                sendWarning("Wrong usage!");
+                menu();
+        }
         if (strcmp(option, "sr") == 0){
                 if (sscanf(input, "%s %c%d %i", option, option, &int1, &int2) == 4) {
                        if(int1 > 7 || int1 < 0){
@@ -167,32 +225,6 @@ void menu(){
                }else{
                        printf("Syntax: sr r<id> <value>        <- Sets register #<id> to <value>");
                }
-                menu();
-        }
-        if ((strcmp(option, "s") && strcmp(option, "si")) == 0){
-                // Single Step
-                int instruction = (pds16.mem[readFromRegister(7)]<<8)+pds16.mem[readFromRegister(7)+1];
-                decodeOp(instruction);
-                writeToRegister(7, readFromRegister(7)+2);
-                menu();
-        }
-        if ((strcmp(option, "do")) == 0){
-                if (sscanf(input, "%s %i %i", option, &int1, &int2) == 3){
-                        int1 = int1 & 0xfffe;
-                        for(int i = int1; i <= int2; i+=2){
-                                int code = (pds16.mem[i]<<8)+pds16.mem[i+1];
-                                printOp(code, i);
-                        }
-                }else if (sscanf(input, "%s %i", option, &int1) == 2){
-                        int1 = int1 & 0xfffe;
-                        for(int i = readFromRegister(7); i <= int1+readFromRegister(7); i+=2){
-                                int code = (pds16.mem[i]<<8)+pds16.mem[i+1];
-                                printOp(code, i);
-                        }
-                }else {
-                        int code = (pds16.mem[readFromRegister(7)]<<8)+pds16.mem[readFromRegister(7)+1];
-                        printOp(code, readFromRegister(7));
-                }
                 menu();
         }
         printf("\nThe command '%s' is unknown!\n", option);
