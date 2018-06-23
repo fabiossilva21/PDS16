@@ -178,11 +178,13 @@ void menu(){
         }
         if ((strcmp(option, "do")) == 0){
                 if (sscanf(input, "%s %i %i", option, &int1, &int2) == 3){
+                        int1 = int1 & 0xfffe;
                         for(int i = int1; i <= int2; i+=2){
                                 int code = (pds16.mem[i]<<8)+pds16.mem[i+1];
                                 printOp(code, i);
                         }
                 }else if (sscanf(input, "%s %i", option, &int1) == 2){
+                        int1 = int1 & 0xfffe;
                         for(int i = readFromRegister(7); i <= int1+readFromRegister(7); i+=2){
                                 int code = (pds16.mem[i]<<8)+pds16.mem[i+1];
                                 printOp(code, i);
