@@ -6,6 +6,35 @@ float timedifference_msec(struct timeval t0, struct timeval t1){
     return (t1.tv_sec - t0.tv_sec) * 1000.0f + (t1.tv_usec - t0.tv_usec) / 1000.0f;
 }
 
+void writeToRam(short int value, int address){
+    if (address >= 0 && address <= 0x7FFF){
+        pds16.mem[address] = value;
+    }else if (address >= 0xFF00 && address <= 0xFF3F){
+        pds16.nCS_Out = value;
+    }else if (address >= 0xFF40 && address <= 0xFF7F){
+        pds16.nCS_EXT0 = value;
+    }else if (address >= 0xFF80 && address <= 0xFFBF){
+        pds16.nCS_EXT1 = value;
+    }else{
+        printf(RED"Failed: " RESET "Setting memory address 0x%04x! Invalid Address\n", address);
+    }
+}
+
+short int readFromRam(int address){
+    if (address >= 0 && address <= 0x7FFF){
+        return pds16.mem[address];
+    }else if (address >= 0xFF00 && address <= 0xFF3F){
+        return pds16.nCS_In;
+    }else if (address >= 0xFF40 && address <= 0xFF7F){
+        return pds16.nCS_EXT0;
+    }else if (address >= 0xFF80 && address <= 0xFFBF){
+        return pds16.nCS_EXT1;
+    }else{
+        printf(RED"Failed: " RESET "Read from memory address 0x%04x! Invalid Address\n", address);
+        return 0;
+    }
+}
+
 short int readFromRegister(int registerID){
         if(registerID < 0 || registerID > 7){
                 sendError("We just tried to read outside the register bank!");
@@ -20,6 +49,20 @@ short int readFromRegister(int registerID){
         }
 }
 
+void writeToRegister(int registerID, short int value){
+  if(registerID < 0 || registerID > 7){
+    printf("Register ID: %d\n", registerID);
+    printf("PC: %d\n", readFromRegister(7));
+    sendError("We just tried to write outside the register bank!");
+  }
+  // Are we in an interrupt routine?
+  if ((pds16.registers[6]&0x20) != 0 && registerID < 6){
+    pds16.iregisters[registerID] = value&0xFFFF;
+  }else{
+    pds16.registers[registerID] = value&0xFFFF;
+  }
+}
+
 void dumpMemory(unsigned char * memory, long unsigned int memSize){
         FILE *fp = fopen("memory.bin", "w+");
         if(!fp) {
@@ -32,20 +75,6 @@ void dumpMemory(unsigned char * memory, long unsigned int memSize){
         sendWarning("Memory dumped sucessfully!");
         printf(GREEN "Dumped: "RESET"%lu bytes\n", (memSize)*sizeof(char));
         fclose(fp);
-}
-
-void writeToRegister(int registerID, short int value){
-        if(registerID < 0 || registerID > 7){
-                printf("Register ID: %d\n", registerID);
-                printf("PC: %d\n", readFromRegister(7));
-                sendError("We just tried to write outside the register bank!");
-        }
-        // Are we in an interrupt routine?
-        if ((pds16.registers[6]&0x20) != 0 && registerID < 6){
-                pds16.iregisters[registerID] = value&0xFFFF;
-        }else{
-                pds16.registers[registerID] = value&0xFFFF;
-        }
 }
 
 void enterInterruption(){
@@ -113,12 +142,12 @@ void patchMemory(int address, int value, bool byte){
                 return;
         }
         if (byte){
-                pds16.mem[address] = value&0xff;
+                writeToRam((value&0xff), address);
                 printf("Sucessfully patched memory address 0x%02x with 0x%02x!\n", address, value&0xff);
         }else{
                 address &= 0xfffe; // Let's remove the last byte
-                pds16.mem[address] = (value&0xff00)>>8;
-                pds16.mem[address+1] = (value&0xff);
+                writeToRam((value&0xff00)>>8, address);
+                writeToRam((value&0xff), address+1);
                 printf("Sucessfully patched memory address 0x%02x and 0x%02x with 0x%02x and 0x%02x!\n", address, address+1, (value&0xff00)>>8, value&0xff);
         }
 
@@ -126,13 +155,13 @@ void patchMemory(int address, int value, bool byte){
         return;
 }
 
-void writeToRam(unsigned char * mem, char * Line, int addressToWrite){
+void programRam(unsigned char * mem, char * Line, int addressToWrite){
         int limit = (addressToWrite & 0xff0000) >> 16;
         addressToWrite = addressToWrite & 0xffff;
         printf("Writing %d bytes to RAM Address: 0x%04x\n", limit, addressToWrite);
         for (int i = 8; i < limit*2+8; i+=2){
-                pds16.mem[addressToWrite] = Line[i]*16+Line[i+1];
-                printf("%02x ", pds16.mem[addressToWrite]);
+                writeToRam(Line[i]*16+Line[i+1], addressToWrite);
+                printf("%02x ", readFromRam(addressToWrite));
                 addressToWrite++;
         }
         printf("\n");
@@ -170,7 +199,7 @@ int parseHexFile(unsigned char * mem, FILE *fileopened){
                         if(line[0] == 0 && line[1] == 0) return 1;
                         int memLoc = getAddressFromLine(line);
                         i = 0;
-                        writeToRam(pds16.mem, line, memLoc);
+                        programRam(pds16.mem, line, memLoc);
                 }
         }
         return 1;
@@ -179,10 +208,14 @@ int parseHexFile(unsigned char * mem, FILE *fileopened){
 void initializePDS16(){
         // Force everything to be 0
         memset(pds16.mem, 0x00, MEMSIZE*sizeof(unsigned char));
-        memset(pds16.registers, 0x00, NUM_REGISTERS*sizeof(unsigned short));
-        memset(pds16.iregisters, 0x00, NUM_IREGISTERS*sizeof(unsigned short));
+        memset(pds16.registers, 0x00, NUM_REGISTERS*sizeof(short int));
+        memset(pds16.iregisters, 0x00, NUM_IREGISTERS*sizeof(short int));
         memset(breakpoints, 0xFFFFFFFF, (MAX_BREAKPOINTS-1)*sizeof(int));
         memset(&interruptTime, -1, sizeof(int));
+        memset(&pds16.nCS_In, 0x00, sizeof(short int));
+        memset(&pds16.nCS_Out, 0x00, sizeof(short int));
+        memset(&pds16.nCS_EXT0, 0x00, sizeof(short int));
+        memset(&pds16.nCS_EXT1, 0x00, sizeof(short int));
 }
 
 void *run(){
@@ -209,7 +242,7 @@ void *run(){
                         runToBeKilled = false;
                         pthread_exit(NULL);
                 }
-                int opp = (pds16.mem[pds16.registers[7]]<<8)+pds16.mem[pds16.registers[7]+1];
+                int opp = (readFromRam(readFromRegister(7))<<8)+readFromRam(readFromRegister(7)+1);
                 decodeOp(opp);
         }
 }
@@ -226,7 +259,7 @@ void *killThread(){
                                 }
                                 pthread_exit(NULL);
                         }else if(ch[0] == 'r'){
-                                printRegisters(pds16.registers);
+                                printRegisters(pds16.mem);
                         }else if (breakpointHit){
                                 pthread_exit(NULL);
                         }else{

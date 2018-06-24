@@ -81,7 +81,7 @@ void menu(){
                 menu();
         }
         if (option[0] == 'r'){
-                printRegisters(pds16.registers);
+                printRegisters(pds16.mem);
                 menu();
         }
         if (strcmp(option, "b") == 0){
@@ -117,17 +117,17 @@ void menu(){
                 if (sscanf(input, "%s %i %i", option, &int1, &int2) == 3){
                         int1 = int1 & 0xfffe;
                         for(int i = int1; i <= int2; i+=2){
-                                int code = (pds16.mem[i]<<8)+pds16.mem[i+1];
+                                int code = (readFromRam(i)<<8)+readFromRam(i+1);
                                 printOp(code, i);
                         }
                 }else if (sscanf(input, "%s %i", option, &int1) == 2){
                         int1 = int1 & 0xfffe;
                         for(int i = readFromRegister(7); i <= int1+readFromRegister(7); i+=2){
-                                int code = (pds16.mem[i]<<8)+pds16.mem[i+1];
+                                int code = (readFromRam(i)<<8)+readFromRam(i+1);
                                 printOp(code, i);
                         }
                 }else {
-                        int code = (pds16.mem[readFromRegister(7)]<<8)+pds16.mem[readFromRegister(7)+1];
+                        int code = (readFromRam(readFromRegister(7))<<8)+readFromRam(readFromRegister(7)+1);
                         printOp(code, readFromRegister(7));
                 }
                 printf("\nLegend: " YELLOW "Constants; " RED "Memory Addresses; " CYAN "Offsets*2\n" RESET);
@@ -194,7 +194,7 @@ void menu(){
         }
         if ((strcmp(option, "s") && strcmp(option, "si")) == 0){
                 // Single Step
-                int instruction = (pds16.mem[readFromRegister(7)]<<8)+pds16.mem[readFromRegister(7)+1];
+                int instruction = (readFromRam(readFromRegister(7))<<8)+readFromRam(readFromRegister(7)+1);
                 decodeOp(instruction);
                 menu();
         }

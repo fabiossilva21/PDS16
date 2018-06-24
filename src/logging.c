@@ -10,7 +10,7 @@ void sendError(char c[]){
         exit(-1);
 }
 
-void printRegisters(){
+void printRegisters(unsigned char * mem){
         bool inInterrupt = ((readFromRegister(6)&0x20) != 0) ? true : false;
         (inInterrupt) ? printf("i") : 1 ;
         printf("r0       : 0x%04hx\n", readFromRegister(0));
@@ -26,7 +26,7 @@ void printRegisters(){
         printf("r5 (LINK): 0x%04hx\n", readFromRegister(5));
         printf("r6 (PSW) : 0x%04hx ", readFromRegister(6));
         printPSW(readFromRegister(6));
-        printf("r7 (PC)  : 0x%04hx\n", readFromRegister(7));
+        printf("r7 (PC)  : 0x%04hx  --> (0x%04x)\n", readFromRegister(7), ((mem[readFromRegister(7)]<<8) + mem[readFromRegister(7)+1]));
 }
 
 void printMem(unsigned char * mem, int memSize, int beginning, int end) {
@@ -83,6 +83,7 @@ void printOp(int code, int memoryAddress){
         }else{
                 printf("\t 0x%04x: ", memoryAddress);
         }
+
         int opCode = (code & (0b11111<<11))>>11;
 
         // Some declarations
@@ -105,10 +106,10 @@ void printOp(int code, int memoryAddress){
 
         switch (opCode) {
                 case 0b00000:
-                        printf("ldi\t r%d, #" YELLOW "0x%02x\n" RESET, rd, imm8);
+                        printf("ldi\t r%d, #" YELLOW "0x%02hhx" RESET, rd, imm8);
                         break;
                 case 0b00001:
-                        printf("ldih\t r%d, #" YELLOW "0x%02x\n" RESET, rd, imm8);
+                        printf("ldih\t r%d, #" YELLOW "0x%02hhx" RESET, rd, imm8);
                         break;
                 case 0b00010:
                         if(!w){
@@ -116,7 +117,7 @@ void printOp(int code, int memoryAddress){
                         }else{
                                 printf("ld\t ");
                         }
-                        printf("r%d," RED " 0x%02x\n" RESET, rd, dir7);
+                        printf("r%d," RED " 0x%02hhx" RESET, rd, dir7);
                         break;
                 case 0b00011:
                         if(!w){
@@ -125,9 +126,9 @@ void printOp(int code, int memoryAddress){
                                 printf("ld\t ");
                         }
                         if((code&0x100) != 0){
-                                printf("r%d, [r%d, r%d]\n", rd, rb2, ri);
+                                printf("r%d, [r%d, r%d]", rd, rb2, ri);
                         }else{
-                                printf("r%d, [r%d, #" YELLOW "0x%x" RESET "]\n", rd, rb2, id);
+                                printf("r%d, [r%d, #" YELLOW "0x%x" RESET "]", rd, rb2, id);
                         }
                         break;
                 case 0b00110:
@@ -136,7 +137,7 @@ void printOp(int code, int memoryAddress){
                         }else{
                                 printf("st\t ");
                         }
-                        printf("r%d," RED " 0x%02x\n" RESET, rs, dir7);
+                        printf("r%d," RED " 0x%02hhx" RESET, rs, dir7);
                         break;
                 case 0b00111:
                         if(!w){
@@ -145,9 +146,9 @@ void printOp(int code, int memoryAddress){
                                 printf("st\t ");
                         }
                         if((code&0x100) != 0){
-                                printf("r%d, [r%d, r%d]\n", rs, rb2, ri);
+                                printf("r%d, [r%d, r%d]", rs, rb2, ri);
                         }else{
-                                printf("r%d, [r%d, #" YELLOW "0x%x" RESET "]\n", rs, rb2, id);
+                                printf("r%d, [r%d, #" YELLOW "0x%x" RESET "]", rs, rb2, id);
                         }
                         break;
                 case 0b10000:
@@ -158,7 +159,7 @@ void printOp(int code, int memoryAddress){
                         if (!f){
                                 printf("f");
                         }
-                        printf("\t r%d, r%d, r%d\n", rd, rm, rn);
+                        printf("\t r%d, r%d, r%d", rd, rm, rn);
                         break;
                 case 0b10010:
                         printf("adc");
@@ -168,7 +169,7 @@ void printOp(int code, int memoryAddress){
                         if (!f){
                                 printf("f");
                         }
-                        printf("\t r%d, r%d, r%d\n", rd, rm, rn);
+                        printf("\t r%d, r%d, r%d", rd, rm, rn);
                         break;
                 case 0b10001:
                         printf("sub");
@@ -178,7 +179,7 @@ void printOp(int code, int memoryAddress){
                         if (!f){
                                 printf("f");
                         }
-                        printf("\t r%d, r%d, r%d\n", rd, rm, rn);
+                        printf("\t r%d, r%d, r%d", rd, rm, rn);
                         break;
                 case 0b10011:
                         printf("sbb");
@@ -188,35 +189,35 @@ void printOp(int code, int memoryAddress){
                         if (!f){
                                 printf("f");
                         }
-                        printf("\t r%d, r%d, r%d\n", rd, rm, rn);
+                        printf("\t r%d, r%d, r%d", rd, rm, rn);
                         break;
                 case 0b10100:
                         printf("add");
                         if (!f){
                                 printf("f");
                         }
-                        printf("\t r%d, r%d, #" YELLOW "0x%02x\n" RESET, rd, rm, const4);
+                        printf("\t r%d, r%d, #" YELLOW "0x%02x" RESET, rd, rm, const4);
                         break;
                 case 0b10110:
                         printf("adc");
                         if (!f){
                                 printf("f");
                         }
-                        printf("\t r%d, r%d, #" YELLOW "0x%02x\n" RESET, rd, rm, const4);
+                        printf("\t r%d, r%d, #" YELLOW "0x%02x" RESET, rd, rm, const4);
                         break;
                 case 0b10101:
                         printf("sub");
                         if (!f){
                                 printf("f");
                         }
-                        printf("\t r%d, r%d, #" YELLOW "0x%02x\n" RESET, rd, rm, const4);
+                        printf("\t r%d, r%d, #" YELLOW "0x%02x" RESET, rd, rm, const4);
                         break;
                 case 0b10111:
                         printf("sbb");
                         if (!f){
                                 printf("f");
                         }
-                        printf("\t r%d, r%d, #" YELLOW "0x%02x\n" RESET, rd, rm, const4);
+                        printf("\t r%d, r%d, #" YELLOW "0x%02x" RESET, rd, rm, const4);
                         break;
                 case 0b11000:
                         printf("anl");
@@ -226,7 +227,7 @@ void printOp(int code, int memoryAddress){
                         if (!f){
                                 printf("f");
                         }
-                        printf("\t r%d, r%d, r%d\n", rd, rm, rn);
+                        printf("\t r%d, r%d, r%d", rd, rm, rn);
                         break;
                 case 0b11001:
                         printf("orl");
@@ -236,7 +237,7 @@ void printOp(int code, int memoryAddress){
                         if (!f){
                                 printf("f");
                         }
-                        printf("\t r%d, r%d, r%d\n", rd, rm, rn);
+                        printf("\t r%d, r%d, r%d", rd, rm, rn);
                         break;
                 case 0b11010:
                         printf("xrl");
@@ -246,7 +247,7 @@ void printOp(int code, int memoryAddress){
                         if (!f){
                                 printf("f");
                         }
-                        printf("\t r%d, r%d, r%d\n", rd, rm, rn);
+                        printf("\t r%d, r%d, r%d", rd, rm, rn);
                         break;
                 case 0b11011:
                         printf("anl");
@@ -259,46 +260,51 @@ void printOp(int code, int memoryAddress){
                         printf("\t r%d, r%d\n", rd, rm);
                         break;
                 case 0b11100:
-                        printf("shl\t r%d, r%d, #" YELLOW "0x%x\n" RESET "%d\n", rd, rm, const4, si);
+                        printf("shl\t r%d, r%d, #" YELLOW "0x%02x" RESET ", %d", rd, rm, const4, si);
                         break;
                 case 0b11101:
-                        printf("shr\t r%d, r%d, #" YELLOW "0x%x\n" RESET "%d\n", rd, rm, const4, si);
+                        printf("shr\t r%d, r%d, #" YELLOW "0x%02x" RESET ", %d", rd, rm, const4, si);
                         break;
                 case 0b11110:
                         if(f){
-                                printf("rrm\t");
+                                printf("rrm\t ");
                         }else{
-                                printf("rrl\t");
+                                printf("rrl\t ");
                         }
-                        printf("r%d, r%d, #" YELLOW "0x%x\n" RESET, rd, rm, const4);
+                        printf("r%d, r%d, #" YELLOW "0x%02x" RESET, rd, rm, const4);
                         break;
                 case 0b01000:
-                        printf("jz\t r%d," CYAN " 0x%02hhx\n" RESET, rb1, off8*2);
+                        printf("jz\t r%d," CYAN " 0x%02hhx" RESET, rb1, off8*2);
                         break;
                 case 0b01001:
-                        printf("jnz\t r%d," CYAN " 0x%02hhx\n" RESET, rb1, off8*2);
+                        printf("jnz\t r%d," CYAN " 0x%02hhx" RESET, rb1, off8*2);
                         break;
                 case 0b01010:
-                        printf("jc\t r%d," CYAN " 0x%02hhx\n" RESET, rb1, off8*2);
+                        printf("jc\t r%d," CYAN " 0x%02hhx" RESET, rb1, off8*2);
                         break;
                 case 0b01011:
-                        printf("jnc\t r%d," CYAN " 0x%02hhx\n" RESET, rb1, off8*2);
+                        printf("jnc\t r%d," CYAN " 0x%02hhx" RESET, rb1, off8*2);
                         break;
                 case 0b01100:
-                        printf("jmp\t r%d," CYAN " 0x%02hhx\n" RESET, rb1, off8*2);
+                        printf("jmp\t r%d," CYAN " 0x%02hhx" RESET, rb1, off8*2);
                         break;
                 case 0b01101:
-                        printf("jmpl\t r%d," CYAN " 0x%02hhx\n" RESET, rb1, off8*2);
+                        printf("jmpl\t r%d," CYAN " 0x%02hhx" RESET, rb1, off8*2);
                         break;
                 case 0b01110:
-                        printf("iret\n");
+                        printf("iret");
                         break;
                 case 0b01111:
-                        printf("nop\n");
+                        printf("nop");
                         break;
                 default:
                         printf(RED "OpCode not recognized %x\n" RESET, opCode);
                         exit(-1);
+        }
+        if (readFromRegister(7) == memoryAddress){
+                printf(" <---\n");
+        }else{
+                printf("\n");
         }
         return;
 }

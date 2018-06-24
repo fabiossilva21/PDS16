@@ -57,26 +57,26 @@ void ld(int code){
         if (opcode == 0b10){
                 int dir7 = (code>>3)&0b1111111;
                 if (w){
-                        writeToRegister(rd, (pds16.mem[dir7] << 8) + pds16.mem[dir7+1]);
+                        writeToRegister(rd, (readFromRam(dir7) << 8) + readFromRam(dir7+1));
                 }else{
-                        writeToRegister(rd, pds16.mem[dir7]);
+                        writeToRegister(rd, readFromRam(dir7));
                 }
         }else if (opcode == 0b11){
                 int idri = (code>>6)&0b111;
                 int rb = (code>>3)&0b111;
                 if (((code>>9)&0b1) == 0){
                         if (w){
-                                writeToRegister(rd, (pds16.mem[readFromRegister(rb)+idri*2]<<8) +
-                                pds16.mem[readFromRegister(rb)+(idri)*2+1]);
+                                writeToRegister(rd, (readFromRam(readFromRegister(rb)+idri*2)<<8) +
+                                readFromRam(readFromRegister(rb)+(idri)*2+1));
                         }else{
-                                writeToRegister(rd, pds16.mem[readFromRegister(rb)+idri]);
+                                writeToRegister(rd, readFromRam(readFromRegister(rb)+idri));
                         }
                 }else{
                         if (w){
-                                writeToRegister(rd, (pds16.mem[readFromRegister(rb)+readFromRegister(idri)] << 8)
-                                + pds16.mem[readFromRegister(rb)+readFromRegister(idri)+1]);
+                                writeToRegister(rd, (readFromRam(readFromRegister(rb)+readFromRegister(idri)) << 8)
+                                + readFromRam(readFromRegister(rb)+readFromRegister(idri)+1));
                         }else{
-                                writeToRegister(rd, pds16.mem[readFromRegister(rb)+readFromRegister(idri)]);
+                                writeToRegister(rd, readFromRam(readFromRegister(rb)+readFromRegister(idri)));
                         }
                 }
         }
@@ -89,27 +89,27 @@ void st(int code){
         if (opcode == 0b110){
                 int dir7 = (code>>3)&0b1111111;
                 if (w){
-                        pds16.mem[dir7] = ((readFromRegister(rs)&0xFF00)>>8);
-                        pds16.mem[dir7+1] = readFromRegister(rs)&0xFF;
+                        writeToRam((readFromRegister(rs)&0xFF00)>>8, dir7);
+                        writeToRam((readFromRegister(rs)&0xFF), dir7+1);
                 }else{
-                        pds16.mem[dir7] = readFromRegister(rs)&0xFF;
+                        writeToRam((readFromRegister(rs)&0xFF), dir7+1);
                 }
         }else if (opcode == 0b111){
                 int idri = (code>>6)&0b111;
                 int rb = (code>>3)&0b111;
                 if (((code>>9)&0b1) == 0){
                         if (w){
-                                pds16.mem[readFromRegister(rb)+idri*2] = (readFromRegister(rs)&0xff00)>>8;
-                                pds16.mem[readFromRegister(rb)+idri*2+1] = (readFromRegister(rs)&0xff);
+                                writeToRam((readFromRegister(rs)&0xff00)>>8, readFromRegister(rb)+idri*2);
+                                writeToRam((readFromRegister(rs)&0xff), readFromRegister(rb)+idri*2+1);
                         }else{
-                                pds16.mem[readFromRegister(rb)+idri] = readFromRegister(rs)&0xff;
+                                writeToRam(readFromRegister(rs)&0xff, readFromRegister(rb)+idri);
                         }
                 }else{
                         if (w){
-                                pds16.mem[readFromRegister(rb)+readFromRegister(idri)] = (readFromRegister(rs)&0xff00)>>8;
-                                pds16.mem[readFromRegister(rb)+readFromRegister(idri)+1] = (readFromRegister(rs)&0xff);
+                                writeToRam((readFromRegister(rs)&0xff00)>>8, readFromRegister(rb)+readFromRegister(idri));
+                                writeToRam((readFromRegister(rs)&0xff), readFromRegister(rb)+readFromRegister(idri)+1);
                         }else{
-                                pds16.mem[readFromRegister(rb)+readFromRegister(idri)] = readFromRegister(rs)&0xff;
+                                writeToRam(readFromRegister(rs)&0xff, readFromRegister(rb)+readFromRegister(idri));
                         }
                 }
         }

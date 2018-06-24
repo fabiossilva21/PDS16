@@ -39,6 +39,10 @@ typedef struct {
         unsigned char mem[MEMSIZE];
         short int registers[NUM_REGISTERS];
         short int iregisters[NUM_IREGISTERS];
+        short int nCS_In;
+        short int nCS_Out;
+        short int nCS_EXT0;
+        short int nCS_EXT1;
 } PDS16;
 
 PDS16 pds16;
