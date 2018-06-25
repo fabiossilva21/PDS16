@@ -131,11 +131,11 @@ void add(int code){
                         // Carry
                         pds16.registers[6] |= (carryBorrow(readFromRegister(rm), readFromRegister(rn), 1)<<1);
                         // GE
-                        pds16.registers[6] |= (readFromRegister(rm)>readFromRegister(rn)? 0b100 : 0);
+                        pds16.registers[6] |= (readFromRegister(rm)>=readFromRegister(rn)? 0b100 : 0);
                         // Parity
                         pds16.registers[6] |= parity(readFromRegister(rm) + readFromRegister(rn))<<3;
                 }
-                if (r){
+                if (r && rd != 6){
                         writeToRegister(rd, readFromRegister(rm)+readFromRegister(rn));
                 }
         }else{
@@ -148,11 +148,13 @@ void add(int code){
                         // Carry
                         pds16.registers[6] |= carryBorrow(readFromRegister(rm), constant, 1)<<1;
                         // GE
-                        pds16.registers[6] |= (readFromRegister(rm)>constant? 0b100 : 0);
+                        pds16.registers[6] |= (readFromRegister(rm)>=constant? 0b100 : 0);
                         // Parity Odd
                         pds16.registers[6] |= parity(readFromRegister(rm)+constant)<<3;
                 }
-                writeToRegister(rd, readFromRegister(rm)+constant);
+                if (rd != 6){
+                        writeToRegister(rd, readFromRegister(rm)+constant);
+                }
         }
 }
 
@@ -173,11 +175,11 @@ void adc(int code){
                         // Carry
                         pds16.registers[6] |= carryBorrow(readFromRegister(rm), (readFromRegister(rn)+c), 1)<<1;
                         // GE
-                        pds16.registers[6] |= (readFromRegister(rm)>(readFromRegister(rn)+c)? 0b100 : 0);
+                        pds16.registers[6] |= (readFromRegister(rm)>=(readFromRegister(rn)+c)? 0b100 : 0);
                         // Parity
                         pds16.registers[6] |= parity(readFromRegister(rm) + (readFromRegister(rn)+c))<<3;
                 }
-                if(r){
+                if(r && rd != 6){
                         writeToRegister(rd, readFromRegister(rm)+readFromRegister(rn)+c);
                 }
         }else{
@@ -190,11 +192,13 @@ void adc(int code){
                         // Carry
                         pds16.registers[6] |= carryBorrow(readFromRegister(rm), constant+c, 1)<<1;
                         // GE
-                        pds16.registers[6] |= (readFromRegister(rm)>(constant+c)? 0b100 : 0);
+                        pds16.registers[6] |= (readFromRegister(rm)>=(constant+c)? 0b100 : 0);
                         // Parity Odd
                         pds16.registers[6] |= parity(readFromRegister(rm)+constant+c)<<3;
                 }
-                writeToRegister(rd, readFromRegister(rm)+constant+c);
+                if (rd != 6){
+                        writeToRegister(rd, readFromRegister(rm)+constant+c);
+                }
         }
 }
 
@@ -214,11 +218,11 @@ void sub(int code){
                         // Carry
                         pds16.registers[6] |= (carryBorrow(readFromRegister(rm), ~(readFromRegister(rn)+1), 1)<<1);
                         // GE
-                        pds16.registers[6] |= (readFromRegister(rm)>readFromRegister(rn)? 0b100 : 0);
+                        pds16.registers[6] |= (readFromRegister(rm)>=readFromRegister(rn)? 0b100 : 0);
                         // Parity
                         pds16.registers[6] |= parity(readFromRegister(rm) - (readFromRegister(rn)))<<3;
                 }
-                if(r){
+                if(r && rd != 6){
                         writeToRegister(rd, readFromRegister(rm)-readFromRegister(rn));
                 }
         }else{
@@ -231,11 +235,13 @@ void sub(int code){
                         // Carry
                         pds16.registers[6] |= carryBorrow(readFromRegister(rm), constant, 0)<<1;
                         // GE
-                        pds16.registers[6] |= (readFromRegister(rm)>(constant)? 0b100 : 0);
+                        pds16.registers[6] |= (readFromRegister(rm)>=(constant)? 0b100 : 0);
                         // Parity
                         pds16.registers[6] |= parity(readFromRegister(rm) - constant)<<3;
                 }
-                writeToRegister(rd, (readFromRegister(rm) - constant));
+                if (rd != 6){
+                        writeToRegister(rd, (readFromRegister(rm) - constant));
+                }
         }
 }
 
@@ -256,11 +262,11 @@ void sbb(int code){
                         // Carry
                         pds16.registers[6] |= carryBorrow(readFromRegister(rm), (readFromRegister(rn)-c), 0)<<1;
                         // GE
-                        pds16.registers[6] |= (readFromRegister(rm)>(readFromRegister(rn)-c)? 0b100 : 0);
+                        pds16.registers[6] |= (readFromRegister(rm)>=(readFromRegister(rn)-c)? 0b100 : 0);
                         // Parity
                         pds16.registers[6] |= parity(readFromRegister(rm) - (readFromRegister(rn)-c))<<3;
                 }
-                if(r){
+                if(r && rd != 6){
                         writeToRegister(rd, readFromRegister(rm)-readFromRegister(rn)-c);
                 }
         }else{
@@ -273,11 +279,13 @@ void sbb(int code){
                         // Carry
                         pds16.registers[6] |= carryBorrow(readFromRegister(rm), constant-c, 0)<<1;
                         // GE
-                        pds16.registers[6] |= ((readFromRegister(rm)>(constant-c))? 0b100 : 0);
+                        pds16.registers[6] |= ((readFromRegister(rm)>=(constant-c))? 0b100 : 0);
                         // Parity
                         pds16.registers[6] |= parity(readFromRegister(rm) - constant - c)<<3;
                 }
-                writeToRegister(rd, (readFromRegister(rm) - constant - c));
+                if (rd != 6){
+                        writeToRegister(rd, (readFromRegister(rm) - constant - c));
+                }
         }
 }
 
@@ -287,12 +295,12 @@ void anl(int code){
         int rn = (code>>6) & 0b111;
         bool r = (code>>9) & 0b1;
         bool f = (code>>10) & 0b1;
-        if(r){
+        if(r && rd != 6){
                 writeToRegister(rd, readFromRegister(rm)&readFromRegister(rn));
                 if(f){
                         pds16.registers[6] &= 0x30;
                         if (readFromRegister(rd) == 0) pds16.registers[6] |= 1;
-                        pds16.registers[6] |= parity(readFromRegister(rd))<<3;
+                        pds16.registers[6] |= (parity(readFromRegister(rd))<<3);
                 }
                 return;
         }
@@ -311,7 +319,7 @@ void orl(int code){
         int rn = (code>>6) & 0b111;
         bool r = (code>>9) & 0b1;
         bool f = (code>>10) & 0b1;
-        if (r){
+        if (r && rd != 6){
                 writeToRegister(rd, readFromRegister(rm)|readFromRegister(rn));
                 if (f){
                         pds16.registers[6] &= 0x30;
@@ -335,7 +343,7 @@ void xrl(int code){
         int rn = (code>>6) & 0b111;
         bool r = (code>>9) & 0b1;
         bool f = (code>>10) & 0b1;
-        if(r){
+        if(r && rd != 6){
                 writeToRegister(rd, readFromRegister(rm)^readFromRegister(rn));
                 if(f){
                         pds16.registers[6] &= 0x30;
@@ -358,12 +366,14 @@ void not(int code){
         int rm = (code>>3) & 0b111;
         bool r = (code>>9) & 0b1;
         bool f = (code>>10) & 0b1;
-        if(r){
+        if(r && rd != 6){
                 writeToRegister(rd, ~readFromRegister(rm));
                 if(f){
                         pds16.registers[6] &= 0x30;
-                        if(readFromRegister(rd) == 0) pds16.registers[6] |= 1;
-                        pds16.registers[6] |= (parity(readFromRegister(rd)<<3));
+                        if(readFromRegister(rd) == 0){
+                                pds16.registers[6] |= 1;
+                        }
+                        pds16.registers[6] |= (parity(readFromRegister(rd))<<3);
                 }
                 return;
         }
@@ -371,6 +381,7 @@ void not(int code){
                 pds16.registers[6] &= 0x30;
                 if(~(readFromRegister(rm)) == 0) {
                         pds16.registers[6] |= 1;
+                        printf("0x%04x\n", readFromRegister(6));
                 }
                 pds16.registers[6] |= (parity(~readFromRegister(rm))<<3);
         }
@@ -386,14 +397,18 @@ void shl(int code){
         // Carry
         pds16.registers[6] |= ((readFromRegister(rm)&(0b1<<(16-c4)))>>14);
         // Operation
-        writeToRegister(rd, readFromRegister(rm)<<c4);
+        unsigned char result = readFromRegister(rm)<<c4;
+        if(in){
+                for(int i = 1; i <= c4; i++){
+                        result = result+(in<<(c4-i));
+                }
+        }
         // Zero
-        pds16.registers[6] |= (readFromRegister(rd) == 0) ? 1 : 0;
+        pds16.registers[6] |= ((readFromRegister(rm)<<c4) == 0) ? 1 : 0;
         // Parity
-        pds16.registers[6] |= (parity(readFromRegister(rd))<<3);
-        if(!in) return;
-        for(int i = 1; i <= c4; i++){
-                writeToRegister(rd, readFromRegister(rd)+(in<<(c4-i)));
+        pds16.registers[6] |= (parity(readFromRegister(rm)<<c4)<<3);
+        if (rd != 6){
+                writeToRegister(rd, result);
         }
 }
 
@@ -407,14 +422,18 @@ void shr(int code){
         // Carry
         pds16.registers[6] |= ((readFromRegister(rm)>>(c4-1))&1)<<1;
         // Operation
-        writeToRegister(rd, readFromRegister(rm)>>c4);
+        unsigned char result = readFromRegister(rm)>>c4;
+        if(in){
+                for(int i = 1; i <= c4; i++){
+                        result = result+(0x8000>>(c4-i));
+                }
+        }
         // Zero
-        pds16.registers[6] |= (readFromRegister(rd) == 0) ? 1 : 0;
+        pds16.registers[6] |= (result == 0) ? 1 : 0;
         // Parity
-        pds16.registers[6] |= (parity(readFromRegister(rd))<<3);
-        if(!in) return;
-        for(int i = 1; i <= c4; i++){
-                writeToRegister(rd, readFromRegister(rd)+(0x8000>>(c4-i)));
+        pds16.registers[6] |= (parity(result)<<3);
+        if (rd != 6){
+                writeToRegister(rd, result);
         }
 }
 
@@ -424,25 +443,29 @@ void rr(int code){
         int rd = code & 0b111;
         int rm = (code>>3) & 0b111;
         int c4 = (code>>6) & 0b1111;
+        unsigned char result = readFromRegister(rm);
         writeToRegister(rd, readFromRegister(rm));
         // RRM?
         if(((code>>10)&0b111111) == 0b111111){
                 int a15 = readFromRegister(rd)&0x8000;
                 for(int i = 1; i <= c4; i++){
-                        writeToRegister(rd, (readFromRegister(rd)>>1)|a15);
+                        result = (result>>1)|a15;
                 }
         }else { // RRL
                 for(int i = 1; i <= c4; i++){
-                        int cy = readFromRegister(rd)&0x1;
-                        writeToRegister(rd, (readFromRegister(rd)>>1)|(cy<<15));
+                        int cy = result&0x1;
+                        result = (result>>1)|(cy<<15);
                 }
         }
         // Carry
         pds16.registers[6] |= ((readFromRegister(rm)>>(c4-1))&1)<<1;
         // Parity
-        pds16.registers[6] |= (parity(readFromRegister(rd))<<3);
+        pds16.registers[6] |= (parity(result)<<3);
         // Zero
-        pds16.registers[6] |= (readFromRegister(rd) == 0) ? 1 : 0;
+        pds16.registers[6] |= (result == 0) ? 1 : 0;
+        if (rd != 6){
+                writeToRegister(rd, result);
+        }
 }
 
 

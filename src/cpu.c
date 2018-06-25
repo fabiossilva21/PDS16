@@ -3,36 +3,38 @@
 bool breakpointHit = false;
 
 float timedifference_msec(struct timeval t0, struct timeval t1){
-    return (t1.tv_sec - t0.tv_sec) * 1000.0f + (t1.tv_usec - t0.tv_usec) / 1000.0f;
+        return (t1.tv_sec - t0.tv_sec) * 1000.0f + (t1.tv_usec - t0.tv_usec) / 1000.0f;
 }
 
 void writeToRam(short int value, int address){
-    if (address >= 0 && address <= 0x7FFF){
-        pds16.mem[address] = value;
-    }else if (address >= 0xFF00 && address <= 0xFF3F){
-        pds16.nCS_Out = value;
-    }else if (address >= 0xFF40 && address <= 0xFF7F){
-        pds16.nCS_EXT0 = value;
-    }else if (address >= 0xFF80 && address <= 0xFFBF){
-        pds16.nCS_EXT1 = value;
-    }else{
-        printf(RED"Failed: " RESET "Setting memory address 0x%04x! Invalid Address\n", address);
-    }
+        address = address & 0xFFFF;
+        if (address >= 0 && address <= 0x7FFF){
+                pds16.mem[address] = value;
+        }else if (address >= 0xFF00 && address <= 0xFF3F){
+                pds16.nCS_Out = value;
+        }else if (address >= 0xFF40 && address <= 0xFF7F){
+                pds16.nCS_EXT0 = value;
+        }else if (address >= 0xFF80 && address <= 0xFFBF){
+                pds16.nCS_EXT1 = value;
+        }else{
+                printf(RED"Failed: " RESET "Setting memory address 0x%04x! Invalid Address\n", address);
+        }
 }
 
 short int readFromRam(int address){
-    if (address >= 0 && address <= 0x7FFF){
-        return pds16.mem[address];
-    }else if (address >= 0xFF00 && address <= 0xFF3F){
-        return pds16.nCS_In;
-    }else if (address >= 0xFF40 && address <= 0xFF7F){
-        return pds16.nCS_EXT0;
-    }else if (address >= 0xFF80 && address <= 0xFFBF){
-        return pds16.nCS_EXT1;
-    }else{
-        printf(RED"Failed: " RESET "Read from memory address 0x%04x! Invalid Address\n", address);
-        return 0;
-    }
+        address = address & 0xFFFF;
+        if (address >= 0 && address <= 0x7FFF){
+                return pds16.mem[address];
+        }else if (address >= 0xFF00 && address <= 0xFF3F){
+                return pds16.nCS_In;
+        }else if (address >= 0xFF40 && address <= 0xFF7F){
+                return pds16.nCS_EXT0;
+        }else if (address >= 0xFF80 && address <= 0xFFBF){
+                return pds16.nCS_EXT1;
+        }else{
+                printf(RED"Failed: " RESET "Read from memory address 0x%04x! Invalid Address\n", address);
+                return 0;
+        }
 }
 
 short int readFromRegister(int registerID){
@@ -50,17 +52,17 @@ short int readFromRegister(int registerID){
 }
 
 void writeToRegister(int registerID, short int value){
-  if(registerID < 0 || registerID > 7){
-    printf("Register ID: %d\n", registerID);
-    printf("PC: %d\n", readFromRegister(7));
-    sendError("We just tried to write outside the register bank!");
-  }
-  // Are we in an interrupt routine?
-  if ((pds16.registers[6]&0x20) != 0 && registerID < 6){
-    pds16.iregisters[registerID] = value&0xFFFF;
-  }else{
-    pds16.registers[registerID] = value&0xFFFF;
-  }
+        if(registerID < 0 || registerID > 7){
+                printf("Register ID: %d\n", registerID);
+                printf("PC: %d\n", readFromRegister(7));
+                sendError("We just tried to write outside the register bank!");
+        }
+        // Are we in an interrupt routine?
+        if ((pds16.registers[6]&0x20) != 0 && registerID < 6){
+                pds16.iregisters[registerID] = value&0xFFFF;
+        }else{
+                pds16.registers[registerID] = value&0xFFFF;
+        }
 }
 
 void dumpMemory(unsigned char * memory, long unsigned int memSize){
@@ -219,6 +221,7 @@ void initializePDS16(){
 }
 
 void *run(){
+        breakpointHit = false;
         struct timeval t0;
         struct timeval t1;
         gettimeofday(&t0, 0);

@@ -250,14 +250,14 @@ void printOp(int code, int memoryAddress){
                         printf("\t r%d, r%d, r%d", rd, rm, rn);
                         break;
                 case 0b11011:
-                        printf("anl");
+                        printf("not");
                         if (!r){
                                 printf("r");
                         }
                         if (!f){
                                 printf("f");
                         }
-                        printf("\t r%d, r%d\n", rd, rm);
+                        printf("\t r%d, r%d", rd, rm);
                         break;
                 case 0b11100:
                         printf("shl\t r%d, r%d, #" YELLOW "0x%02x" RESET ", %d", rd, rm, const4, si);
@@ -298,8 +298,7 @@ void printOp(int code, int memoryAddress){
                         printf("nop");
                         break;
                 default:
-                        printf(RED "OpCode not recognized %x\n" RESET, opCode);
-                        exit(-1);
+                        printf(YELLOW "OpCode not recognized 0x%x" RESET, opCode);
         }
         if (readFromRegister(7) == memoryAddress){
                 printf(" <---\n");

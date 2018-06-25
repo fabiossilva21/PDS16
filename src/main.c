@@ -50,12 +50,15 @@ int main(int argc, char const *argv[]) {
 }
 
 void menu(){
-        printf(LIGHT_YELLOW "\n0x%04x" RESET ">", readFromRegister(7));
+        printf(LIGHT_YELLOW "\n0x%04x" RESET "> ", readFromRegister(7));
         char input[255] = {0};
         char option[255] = {0};
         int int1 = 0xFFFFFFFF;
         int int2 = 0xFFFFFFFF;
-        if (fgets(input, sizeof(input), stdin) != NULL)
+        if (fgets(input, sizeof(input), stdin) == NULL){
+                printf("You closed the stdin pipe... Don't press CTRL-D\n");
+                exit(-1);
+        }
         // Let's put all to lowercase!
         toLowerArray(input, sizeof(input)/sizeof(char));
         // Remember the last command!
@@ -75,7 +78,7 @@ void menu(){
                 pthread_join(tids[2], NULL);
                 menu();
         }
-        if (input[0] == 'e') exit(0);
+        if (option[0] == 'e') exit(0);
         if (option[0] == 'i'){
                 enterInterruption();
                 menu();
