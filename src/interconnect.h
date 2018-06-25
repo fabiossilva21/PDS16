@@ -60,3 +60,6 @@ void iret();
 // gui.c
 unsigned getTermWidth();
 unsigned getTermHeight();
+void fixedASMPrinting();
+void fixedRegistersPrinting();
+void printHelp(char * commandHelp);

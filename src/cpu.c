@@ -159,17 +159,16 @@ void patchMemory(int address, int value, bool byte){
                 printf("Sucessfully patched memory address 0x%02x and 0x%02x with 0x%02x and 0x%02x!\n", address, address+1, (value&0xff00)>>8, value&0xff);
         }
 
-
         return;
 }
 
 void programRam(unsigned char * mem, char * Line, int addressToWrite){
         int limit = (addressToWrite & 0xff0000) >> 16;
         addressToWrite = addressToWrite & 0xffff;
-        printf("Writing %d bytes to RAM Address: 0x%04x\n", limit, addressToWrite);
+        // printf("Writing %d bytes to RAM Address: 0x%04x\n", limit, addressToWrite);
         for (int i = 8; i < limit*2+8; i+=2){
                 writeToRam(Line[i]*16+Line[i+1], addressToWrite);
-                printf("%02x ", readFromRam(addressToWrite));
+                // printf("%02x ", readFromRam(addressToWrite));
                 addressToWrite++;
         }
         printf("\n");

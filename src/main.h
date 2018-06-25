@@ -1,5 +1,2 @@
-#include "microcode.h"
-// #include <curses.h>
-
-char lastcommand[255];
-pthread_t tids[2];
+// #include "microcode.h"
+#include "gui.h"
