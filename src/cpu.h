@@ -12,7 +12,8 @@ enum { MEMSIZE = (int)pow(2, ADDRESS_BITS-1) };
 #define MAX_BREAKPOINTS 5
 
 int breakpoints[MAX_BREAKPOINTS];
-
+bool fixedRegisters;
+bool fixedASM;
 bool runToBeKilled;
 int interruptTime;
 

@@ -1,7 +1,7 @@
 // logging.c
 void sendWarning(char c[]);
 void sendError(char c[]);
-void printMem(unsigned char * mem, int memSize, int beginning, int end);
+void printMem(unsigned char * mem, int memSize, int beginning, int end, unsigned char nCS_Out);
 void printRegisters(unsigned char * mem);
 void printPSW(short int PSW);
 char * toLowerArray(char * array, int sizeArray);

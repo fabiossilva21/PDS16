@@ -29,11 +29,12 @@ void printRegisters(unsigned char * mem){
         printf("r7 (PC)  : 0x%04hx  --> (0x%04x)\n", readFromRegister(7), ((mem[readFromRegister(7)]<<8) + mem[readFromRegister(7)+1]));
 }
 
-void printMem(unsigned char * mem, int memSize, int beginning, int end) {
+void printMem(unsigned char * mem, int memSize, int beginning, int end, unsigned char nCS_Out) {
+        int printed = 0;
         if (end == 0x8000) end = 0x7FFF;
         // Let's try not the access outside of what we want :)
         if (beginning - end >= 0 ) return;
-        if (end > memSize){
+        if ((end > memSize && end < 0xFEFF) || (end > memSize && end > 0xFF3F)){
                 sendWarning ("End address goes beyond the memory size. Command not executed.");
                 return;
         }
@@ -41,9 +42,22 @@ void printMem(unsigned char * mem, int memSize, int beginning, int end) {
                 sendWarning ("Start address doesn't belong to memory address. Command not executed.");
                 return;
         }
-
         printf("         00   02   04   06   08   0a   0c   0e\n");
-        int printed = 0;
+        if (beginning > 0xFEFF && end < 0xFF40 ){
+                for (int i = beginning; i <= end; i+=0x2){
+                        if (printed == 0){
+                                printf("0x%04x: ", i);
+                                printed = 0;
+                        }
+                        printf("%02x%02x ", nCS_Out, nCS_Out);
+                        printed++;
+                        if (printed == 8 || i == end){
+                                printed = 0;
+                                printf("\n");
+                        }
+                }
+                return;
+        }
         for (int i = beginning; i <= end; i+=0x2){
                 if (printed == 0){
                         printf("0x%04x: ", i);

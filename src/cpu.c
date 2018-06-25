@@ -74,8 +74,14 @@ void dumpMemory(unsigned char * memory, long unsigned int memSize){
         for (int i = 0; i < memSize; i++ ){
                 fprintf(fp, "%c", memory[i]);
         }
+        for (int i = 0x8000; i<=0xFEFF;i++){
+                fprintf(fp, "%c", 0);
+        }
+        for (int i = 0xFF00; i<=0xFF3F;i++){
+                fprintf(fp, "%c", pds16.nCS_Out);
+        }
         sendWarning("Memory dumped sucessfully!");
-        printf(GREEN "Dumped: "RESET"%lu bytes\n", (memSize)*sizeof(char));
+        printf(GREEN "Dumped: "RESET"%lu bytes\n", (0xFF40)*sizeof(char));
         fclose(fp);
 }
 
@@ -139,7 +145,7 @@ void erasePDS(unsigned char * mem){
 }
 
 void patchMemory(int address, int value, bool byte){
-        if (address > 0x7fff || address < 0x0){
+        if ((address > 0x7fff || address < 0x0) && (address > 0xFF3F || address < 0xFF00)){
                 printf("Cannot write 0x%04x to 0x%04x\n", value,  address);
                 return;
         }

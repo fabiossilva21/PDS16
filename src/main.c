@@ -34,7 +34,8 @@ void breakpointManager(int id, int address, bool adding){
 }
 
 int main(int argc, char const *argv[]) {
-        advancedPrinting = false;
+        fixedRegisters = true;
+        fixedASM = false;
         FILE *file;
         file = fopen(argv[1], "r");
         if(!file){
@@ -50,11 +51,32 @@ int main(int argc, char const *argv[]) {
         return 0;
 }
 
+void fixedASMPrinting(){
+        printf("\033[1000A");
+        printf("\033[1000D");
+        int lines = getTermHeight();
+        printf("\033[%dB", lines/2-18);
+        int i;
+        if (readFromRegister(7)-2 < 0){
+                i = 0;
+        }else{
+                i = readFromRegister(7)-2;
+        }
+        for(; i < readFromRegister(7)+1.5*lines; i+=2){
+                int code = (readFromRam(i)<<8)+readFromRam(i+1);
+                printOp(code, i);
+        }
+        printf("\033[1000B");
+        printf("\033[2A");
+        printf("Legend: " YELLOW "Constants; " RED "Memory Addresses; " CYAN "Offsets*2; " RESET "(*)Breakpoints; <--- actual PC\n");
+}
+
 void fixedRegistersPrinting(){
         int col = getTermWidth();
         int lines = getTermHeight();
         printf("\033[1000A");
-        printf("\033[%dB", lines/2-6);
+        printf("\033[1000D");
+        printf("\033[%dB", lines/2-8);
         printf("\033[%dC************************\n", col-27);
         printf("\033[%dC*                      *\n", col-27);
         printf("\033[%dC*    (i)r0 = 0x%04X    *\n", col-27, readFromRegister(0)&0xFFFF);
@@ -72,7 +94,10 @@ void fixedRegistersPrinting(){
 }
 
 void menu(){
-        if (advancedPrinting == true){
+        if (fixedASM){
+                fixedASMPrinting();
+        }
+        if (fixedRegisters){
                 fixedRegistersPrinting();
         }
         printf(LIGHT_YELLOW "\n0x%04x" RESET "> ", readFromRegister(7));
@@ -84,7 +109,7 @@ void menu(){
                 printf("You closed the stdin pipe... Don't press CTRL-D\n");
                 exit(-1);
         }
-        if (advancedPrinting){
+        if (fixedRegisters){
                 printf("\033[2J");
         }
         // Let's put all to lowercase!
@@ -161,7 +186,7 @@ void menu(){
                         int code = (readFromRam(readFromRegister(7))<<8)+readFromRam(readFromRegister(7)+1);
                         printOp(code, readFromRegister(7));
                 }
-                printf("\nLegend: " YELLOW "Constants; " RED "Memory Addresses; " CYAN "Offsets*2\n" RESET);
+                printf("\nLegend: " YELLOW "Constants; " RED "Memory Addresses; " CYAN "Offsets*2; " RESET "(*)Breakpoints; <--- actual PC");
                 menu();
         }
         if (strcmp(option, "dump") == 0){
@@ -171,11 +196,11 @@ void menu(){
         if (strcmp(option, "mp") == 0){
                 // Memory Print
                 if(sscanf(input, "%s %i %i", option, &int1, &int2) == 3){
-                        printMem(pds16.mem, MEMSIZE, int1, int2);
+                        printMem(pds16.mem, MEMSIZE, int1, int2, pds16.nCS_Out);
                 }else if (sscanf(input, "%s %i", option, &int1) == 2){
-                        printMem(pds16.mem, MEMSIZE, readFromRegister(7), int1);
+                        printMem(pds16.mem, MEMSIZE, readFromRegister(7), int1, pds16.nCS_Out);
                 }else{
-                        printMem(pds16.mem, MEMSIZE, 0, MEMSIZE);
+                        printMem(pds16.mem, MEMSIZE, 0, MEMSIZE, pds16.nCS_Out);
                 }
                 menu();
         }
@@ -243,11 +268,21 @@ void menu(){
                         }
                         if(strcmp(option, "showregisters") == 0 || strcmp(option, "sr") == 0 ){
                                 if (int1 >= 0){
-                                        printf("Advanced Printing has been activated!\n");
-                                        advancedPrinting = true;
+                                        printf("Fixed registers option has been activated!\n");
+                                        fixedRegisters = true;
                                 }else{
-                                        printf("Advanced Printing has been deactivated!\n");
-                                        advancedPrinting = false;
+                                        printf("Fixed registers option has been deactivated!\n");
+                                        fixedRegisters = false;
+                                }
+                                menu();
+                        }
+                        if(strcmp(option, "showcodes") == 0 || strcmp(option, "sc") == 0 ){
+                                if (int1 >= 0){
+                                        printf("Fixed ASM option has been activated!\n");
+                                        fixedASM = true;
+                                }else{
+                                        printf("Fixed ASM option has been deactivated!\n");
+                                        fixedASM = false;
                                 }
                                 menu();
                         }
