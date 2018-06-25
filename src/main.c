@@ -34,6 +34,7 @@ void breakpointManager(int id, int address, bool adding){
 }
 
 int main(int argc, char const *argv[]) {
+        advancedPrinting = false;
         FILE *file;
         file = fopen(argv[1], "r");
         if(!file){
@@ -49,7 +50,31 @@ int main(int argc, char const *argv[]) {
         return 0;
 }
 
+void fixedRegistersPrinting(){
+        int col = getTermWidth();
+        int lines = getTermHeight();
+        printf("\033[1000A");
+        printf("\033[%dB", lines/2-6);
+        printf("\033[%dC************************\n", col-27);
+        printf("\033[%dC*                      *\n", col-27);
+        printf("\033[%dC*    (i)r0 = 0x%04X    *\n", col-27, readFromRegister(0)&0xFFFF);
+        printf("\033[%dC*    (i)r1 = 0x%04X    *\n", col-27, readFromRegister(1)&0xFFFF);
+        printf("\033[%dC*    (i)r2 = 0x%04X    *\n", col-27, readFromRegister(2)&0xFFFF);
+        printf("\033[%dC*    (i)r3 = 0x%04X    *\n", col-27, readFromRegister(3)&0xFFFF);
+        printf("\033[%dC*    (i)r4 = 0x%04X    *\n", col-27, readFromRegister(4)&0xFFFF);
+        printf("\033[%dC*    (i)r5 = 0x%04X    *\n", col-27, readFromRegister(5)&0xFFFF);
+        printf("\033[%dC*       r6 = 0x%04X    *\n", col-27, readFromRegister(6)&0xFFFF);
+        printf("\033[%dC*       r7 = 0x%04X    *\n", col-27, readFromRegister(7)&0xFFFF);
+        printf("\033[%dC*                      *\n", col-27);
+        printf("\033[%dC************************\n", col-27);
+        printf("\033[1000B");
+        printf("\033[1A");
+}
+
 void menu(){
+        if (advancedPrinting == true){
+                fixedRegistersPrinting();
+        }
         printf(LIGHT_YELLOW "\n0x%04x" RESET "> ", readFromRegister(7));
         char input[255] = {0};
         char option[255] = {0};
@@ -58,6 +83,9 @@ void menu(){
         if (fgets(input, sizeof(input), stdin) == NULL){
                 printf("You closed the stdin pipe... Don't press CTRL-D\n");
                 exit(-1);
+        }
+        if (advancedPrinting){
+                printf("\033[2J");
         }
         // Let's put all to lowercase!
         toLowerArray(input, sizeof(input)/sizeof(char));
@@ -112,7 +140,7 @@ void menu(){
                 }
         }
         if (strcmp(option, "clear") == 0){
-                for (int i = 0;  i < 60;  i++, printf("%c", '\n'));
+                printf("\033[H\033[J");
                 menu();
         }
         if (strcmp(option, "do") == 0){
@@ -211,6 +239,16 @@ void menu(){
                                 }
                                 printf("interruptTime has been set to %dms\n", interruptTime);
                                 printf("\nSet interruptTime = -1 to disable it!\n");
+                                menu();
+                        }
+                        if(strcmp(option, "showregisters") == 0 || strcmp(option, "sr") == 0 ){
+                                if (int1 >= 0){
+                                        printf("Advanced Printing has been activated!\n");
+                                        advancedPrinting = true;
+                                }else{
+                                        printf("Advanced Printing has been deactivated!\n");
+                                        advancedPrinting = false;
+                                }
                                 menu();
                         }
                 }

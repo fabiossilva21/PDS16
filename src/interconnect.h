@@ -27,8 +27,10 @@ void *killThread();
 int decodeOp(unsigned int code);
 
 // main.c
+void fixedRegistersPrinting();
 bool isOnBreakpointList(int address);
 void breakpointManager(int id, int address, bool adding);
+int main(int argc, char const *argv[]);
 void menu();
 
 // microcode.c
@@ -54,3 +56,7 @@ void jnc(int code);
 void jmp(int code);
 void jmpl(int code);
 void iret();
+
+// gui.c
+unsigned getTermWidth();
+unsigned getTermHeight();
