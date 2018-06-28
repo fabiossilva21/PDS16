@@ -2,7 +2,7 @@
 
 #declarar variaveis
 CC=gcc
-CFLAGS=-lm -Wall -lpthread -lncurses
+CFLAGS=-lssl -lcrypto -std=c99 -lm -Wall -lpthread -lncurses
 
 build: clean
 	mkdir -p build/

@@ -48,6 +48,7 @@ int main(int argc, char const *argv[]) {
         }
         initializePDS16();
         parseHexFile(pds16.mem, file);
+        SHA1((unsigned char * )argv[1], strlen(argv[1]), sha1);
         fclose(file);
         menu();
         return 0;

@@ -261,6 +261,10 @@ void menu(){
                         }
                         erasePDS(pds16.mem);
                         parseHexFile(pds16.mem, file);
+                        SHA1((unsigned char *)option, strlen(option), sha1);
+                        for (int i = 0; i < strlen(option); i++) {
+                                printf("%x", option[i]);
+                        }
                         fclose(file);
                         menu();
                 }else{
