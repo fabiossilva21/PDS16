@@ -24,7 +24,6 @@ int parseHexFile(unsigned char * mem, FILE *fileopened);
 void initializePDS16();
 void *run();
 void *killThread();
-int decodeOp(unsigned int code);
 
 // main.c
 void fixedRegistersPrinting();
@@ -34,6 +33,9 @@ int main(int argc, char const *argv[]);
 void menu();
 
 // microcode.c
+void decodeOp(unsigned int code);
+bool carryBorrow(short int number1, short int number2, bool isSum);
+bool parity(short int number);
 void ldi(int code);
 void ldih(int code);
 void ld(int code);
@@ -55,7 +57,8 @@ void jc(int code);
 void jnc(int code);
 void jmp(int code);
 void jmpl(int code);
-void iret();
+void nop(int code);
+void iret(int code);
 
 // gui.c
 unsigned getTermWidth();

@@ -376,7 +376,7 @@ void menu(){
                 menu();
         }
         if (strcmp(option, "sr") == 0){
-                if (sscanf(input, "%s %d %i", option, &int1, &int2) == 4) {
+                if (sscanf(input, "%s %d %i", option, &int1, &int2) == 3) {
                        if(int1 > 7 || int1 < 0){
                                sendWarning("Tried to set a non-existant register.\n");
                                menu();

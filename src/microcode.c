@@ -1,5 +1,57 @@
 #include "microcode.h"
 
+void decodeOp(unsigned int code){
+        int opCode = (code & (0b11111<<11))>>11;
+
+        static void (*op[32])(unsigned int _code);
+        
+        op[0b00000] = (void *) ldi;
+        op[0b00001] = (void *) ldih;
+        op[0b00010] = (void *) ld;
+        op[0b00011] = (void *) ld;
+        op[0b00100] = 0;
+        op[0b00101] = 0;
+        op[0b00110] = (void *) st;
+        op[0b00111] = (void *) st;
+        op[0b01000] = (void *) jz;
+        op[0b01001] = (void *) jnz;
+        op[0b01010] = (void *) jc;
+        op[0b01011] = (void *) jnc;
+        op[0b01100] = (void *) jmp;
+        op[0b01101] = (void *) jmpl;
+        op[0b01110] = (void *) iret;
+        op[0b01111] = (void *) nop;
+        op[0b10000] = (void *) add;
+        op[0b10001] = (void *) sub;
+        op[0b10010] = (void *) adc;
+        op[0b10011] = (void *) sbb;
+        op[0b10100] = (void *) add;
+        op[0b10101] = (void *) sub;
+        op[0b10110] = (void *) adc;
+        op[0b10111] = (void *) sbb;
+        op[0b11000] = (void *) anl;
+        op[0b11001] = (void *) orl;
+        op[0b11010] = (void *) xrl;
+        op[0b11011] = (void *) not;
+        op[0b11100] = (void *) shl;
+        op[0b11101] = (void *) shr;
+        op[0b11110] = 0;
+        op[0b11111] = (void *) rr;
+
+        if (op[opCode] == 0){
+                printf(RED "OpCode not recognized %x\n" RESET, opCode);
+                exit(-1);
+        }
+
+        if (opCode != 0b01110){
+                writeToRegister(7, readFromRegister(7)+2);
+        }
+
+        op[opCode](code);
+
+        return;
+}
+
 bool carryBorrow(short int number1, short int number2, bool isSum){
         if (isSum){
                 short int sum = number1+number2;
@@ -504,6 +556,10 @@ void jmpl(int code){
         jmp(code);
 }
 
-void iret(){
+void nop(int code){
+        return;
+}
+
+void iret(int code){
         exitInterruption();
 }
