@@ -1,55 +1,44 @@
 #include "main.h"
 
-bool isOnBreakpointList(int address){
-        for (int i = 0; i < MAX_BREAKPOINTS-1; i++){
-                if (breakpoints[i] == address)
-                        return true;
-        }
-        return false;
-}
-
-void breakpointManager(int id, int address, bool adding){
-        address &= 0xfffe;
-        if(adding){
-                if (isOnBreakpointList(address)){
-                        printf(YELLOW "Warning: " RESET "The address 0x%04x is already on the breakpoint list\n", address);
-                        menu();
-                }
-                for(int i = 0; i < MAX_BREAKPOINTS-1; i++){
-                        if(breakpoints[i] == 0xFFFFFFFF){
-                                breakpoints[i] = address;
-                                printf(GREEN "Added a breakpoint at: " RESET "0x%04x\n", address);
-                                menu();
-                        }
-                }
-                sendWarning("No more breakpoints can be added! Remove some by doing 'bd <id>', to get the ids do 'b'.");
-        }else{
-                if(breakpoints[id] == 0xFFFFFFFF){
-                        printf(YELLOW"Breakpoint #%d is not set!\n"RESET, id);
-                }else{
-                        breakpoints[id] = 0xFFFFFFFF;
-                        printf(GREEN "Breakpoint #%d deleted sucessfully!\n" RESET, id);
-                }
-        }
-}
-
 int main(int argc, char const *argv[]) {
-        printf("\033[H\033[J");
-        fixedRegisters = true;
-        clearScreenEveryCommand = true;
-        fixedASM = false;
+        initializeGUI();
+
+        // Hex File
         FILE *file;
         file = fopen(argv[1], "r");
-        if(!file){
+        if (!file){
                 printf(RED "Improper calling!\n\n" RESET);
                 printf("Syntax of the programm:\n");
-                printf("./PDS16 <hex_file>\n\n");
+                printf("./PDS16 <hex_file> (optional)<syms_file>\n\n");
                 exit(1);
         }
         initializePDS16();
         parseHexFile(pds16.mem, file);
-        SHA1((unsigned char * )argv[1], strlen(argv[1]), sha1);
         fclose(file);
+
+        // Syms file
+        if (argc == 3){
+                file = fopen(argv[2], "r");
+                if (!file){
+                        printf(YELLOW "Unable to open symbols file: " RESET "%s\n", argv[2]);
+                }else{
+                        parseSymbolsFile(file);
+                        fclose(file);
+                }
+        }else{
+                char tryingFile[255] = {0};
+                memcpy(tryingFile, argv[1], strlen(argv[1])-4);
+                strcat(tryingFile, ".syms\0");
+                printf("No symbols file especified... Trying: %s\n", tryingFile);
+                file = fopen(tryingFile, "r");
+                if (!file){
+                        printf(YELLOW "Unable to open symbols file: " RESET "%s\n", tryingFile);
+                }else{
+                        parseSymbolsFile(file);
+                        fclose(file);
+                }
+        }
+        // SHA1((unsigned char *)argv[1], strlen(argv[1]), sha1);
         menu();
         return 0;
 }

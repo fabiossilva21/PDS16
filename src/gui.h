@@ -1,8 +1,8 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <term.h>
 #include <stdlib.h>
 #include <string.h>
-#include "logging.h"
 #include "microcode.h"
 #include <openssl/sha.h>
 

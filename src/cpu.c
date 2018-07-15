@@ -178,9 +178,11 @@ int getVal(char c){
         int rtVal = 0;
 
         if(c >= '0' && c <= '9'){
-           rtVal = c - '0';
+                rtVal = c - '0';
+        }else if(c >= 'A' && c <= 'F'){
+                rtVal = c - 'A' + 10;
         }else{
-           rtVal = c - 'A' + 10;
+                rtVal = c - 'a' + 10;
         }
         return rtVal;
 }

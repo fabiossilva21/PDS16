@@ -1,10 +1,50 @@
 #include "gui.h"
 
+void initializeGUI(){
+        printf("\033[H\033[J");
+        fixedRegisters = true;
+        clearScreenEveryCommand = true;
+        fixedASM = false;
+}
+
+bool isOnBreakpointList(int address){
+        for (int i = 0; i < MAX_BREAKPOINTS-1; i++){
+                if (breakpoints[i] == address)
+                        return true;
+        }
+        return false;
+}
+
+void breakpointManager(int id, int address, bool adding){
+        address &= 0xfffe;
+        if(adding){
+                if (isOnBreakpointList(address)){
+                        printf(YELLOW "Warning: " RESET "The address 0x%04x is already on the breakpoint list\n", address);
+                        menu();
+                }
+                for(int i = 0; i < MAX_BREAKPOINTS-1; i++){
+                        if(breakpoints[i] == 0xFFFFFFFF){
+                                breakpoints[i] = address;
+                                printf(GREEN "Added a breakpoint at: " RESET "0x%04x\n", address);
+                                menu();
+                        }
+                }
+                sendWarning("No more breakpoints can be added! Remove some by doing 'bd <id>', to get the ids do 'b'.");
+        }else{
+                if(breakpoints[id] == 0xFFFFFFFF){
+                        printf(YELLOW"Breakpoint #%d is not set!\n"RESET, id);
+                }else{
+                        breakpoints[id] = 0xFFFFFFFF;
+                        printf(GREEN "Breakpoint #%d deleted sucessfully!\n" RESET, id);
+                }
+        }
+}
+
 void fixedASMPrinting(){
         printf("\033[1000A");
         printf("\033[1000D");
         int l = getTermHeight();
-        printf("\033[%dB", lines/2-14);
+        printf("\033[%dB", 5);
         int i;
         if (readFromRegister(7)-2 < 0){
                 i = 0;
@@ -17,7 +57,7 @@ void fixedASMPrinting(){
         }
         printf("\033[1000B");
         printf("\033[2A");
-        printf("Legend: " YELLOW "Constants; " RED "Memory Addresses; " CYAN "Offsets*2; " RESET "(*)Breakpoints; <--- actual PC\n");
+        printf("Legend: " YELLOW "Constants; " RED "Memory Addresses; " CYAN "Offsets*2; " GREEN "Symbol; " RESET "(*)Breakpoints; <--- actual PC\n");
 }
 
 void fixedRegistersPrinting(){
@@ -93,6 +133,59 @@ unsigned int getTermHeight(){
                 return 0;
         }
         return cols;
+}
+
+void parseSymbolsLine(char * line){
+        bool addressType = false;
+        short int nameLen = 0;
+        char name[255];
+        short int value;
+        int counter = 0;
+        int i = 0;
+
+        addressType = line[counter];
+        counter++;
+        nameLen = (line[counter]<<12)+(line[counter+1]<<8)+(line[counter+2]<<4)+(line[counter+3]);
+        counter += 4;
+        for (i = 0; i < nameLen; i++){
+                name[i] = line[counter]*16+line[counter+1];
+                if (i + 1 <= nameLen) counter += 2;
+        }
+
+        name[i] = 0;
+        value = (line[counter]<<12)+(line[counter+1]<<8)+(line[counter+2]<<4)+(line[counter+3]);
+        if(addressType){
+                symbols.e_address[symbols.addressesIn] = value;
+                strcpy(symbols.addressNames[symbols.addressesIn], name);
+                symbols.addressesIn++;
+        }else{
+                symbols.n_address[symbols.numericsIn] = value;
+                strcpy(symbols.numericNames[symbols.numericsIn], name);
+                symbols.numericsIn++;
+        }
+}
+
+void parseSymbolsFile(FILE *symbols_file){
+        printf("Started parsing symbols\n\n\n\n");
+        memset(symbols.e_address, 0x00, 255*sizeof(short int));
+        memset(symbols.n_address, 0x00, 255*sizeof(short int));
+        memset(symbols.addressNames, 0x00, 255*255*sizeof(char));
+        memset(symbols.numericNames, 0x00, 255*255*sizeof(char));
+        memset(&symbols.addressesIn, 0x00, sizeof(int));
+        memset(&symbols.numericsIn, 0x00, sizeof(int));
+        int c, i = 0;
+        char line[255];
+        while ((c = fgetc(symbols_file)) != EOF){
+                if (c != '\n'){
+                        line[i] = getVal(c);
+                        i++;
+                }
+                if(c == '\n'){
+                        parseSymbolsLine(line);
+                        memset(&line, 0x00, 255*sizeof(char));
+                        i = 0;
+                }
+        }
 }
 
 void menu(){
@@ -175,6 +268,7 @@ void menu(){
                         menu();
                 }else{
                         printHelp("bc");
+                        menu();
                 }
         }
         if (strcmp(option, "bd") == 0){
@@ -183,6 +277,7 @@ void menu(){
                         menu();
                 }else{
                         printHelp("bd");
+                        menu();
                 }
         }
         if (strcmp(option, "clear") == 0){
@@ -307,6 +402,20 @@ void menu(){
                 // Single Step
                 int instruction = (readFromRam(readFromRegister(7))<<8)+readFromRam(readFromRegister(7)+1);
                 decodeOp(instruction);
+                menu();
+        }
+        if (strcmp(option, "symbols") == 0){
+                for(int i = 0; i < symbols.addressesIn; i++){
+                        printf("Address symbol number %i:\n", i);
+                        printf("Name: %s\n", symbols.addressNames[i]);
+                        printf("Value: 0x%04x\n\n", symbols.e_address[i]);
+                }
+
+                for(int i = 0; i < symbols.numericsIn; i++){
+                        printf("Numeric symbol number %i:\n", i);
+                        printf("Name: %s\n", symbols.numericNames[i]);
+                        printf("Value: 0x%04x\n\n", symbols.n_address[i]);
+                }
                 menu();
         }
         if (strcmp(option, "set") == 0){
@@ -493,5 +602,4 @@ void printHelp(char * commandHelp){
         }else{
                 printf("Couldn't understand '%s'!\n", commandHelp);
         }
-        // printf("\t(r)\t\tRegisters - Prints registers to the screen once\n");
 }

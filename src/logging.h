@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <ctype.h>
@@ -12,3 +13,16 @@
 #define LIGHT_YELLOW "\e[0;33m"
 #define YELLOW  "\e[1;33m"
 #define CYAN    "\e[1;36m"
+
+typedef struct {
+        short int e_address[255];
+        short int n_address[255];
+
+        char addressNames[255][255];
+        char numericNames[255][255];
+
+        int addressesIn;
+        int numericsIn;
+} symbolsStruct;
+
+symbolsStruct symbols;

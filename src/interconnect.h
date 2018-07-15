@@ -1,8 +1,8 @@
 // logging.c
 void sendWarning(char c[]);
 void sendError(char c[]);
-void printMem(unsigned char * mem, int memSize, int beginning, int end, unsigned char nCS_Out);
 void printRegisters(unsigned char * mem);
+void printMem(unsigned char * mem, int memSize, int beginning, int end, unsigned char nCS_Out);
 void printPSW(short int PSW);
 char * toLowerArray(char * array, int sizeArray);
 void printOp(int code, int memoryAddress);
@@ -26,11 +26,7 @@ void *run();
 void *killThread();
 
 // main.c
-void fixedRegistersPrinting();
-bool isOnBreakpointList(int address);
-void breakpointManager(int id, int address, bool adding);
 int main(int argc, char const *argv[]);
-void menu();
 
 // microcode.c
 void decodeOp(unsigned int code);
@@ -61,6 +57,12 @@ void nop(int code);
 void iret(int code);
 
 // gui.c
+void fixedRegistersPrinting();
+bool isOnBreakpointList(int address);
+void breakpointManager(int id, int address, bool adding);
+void menu();
+void initializeGUI();
+void parseSymbolsFile(FILE *symbols_file);
 unsigned getTermWidth();
 unsigned getTermHeight();
 void fixedASMPrinting();

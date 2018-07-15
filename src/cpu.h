@@ -4,7 +4,6 @@
 #include <string.h>
 #include <sys/time.h>
 #include "logging.h"
-// #include "gui.h"
 
 #define ADDRESS_BITS    16
 enum { MEMSIZE = (int)pow(2, ADDRESS_BITS-1) };

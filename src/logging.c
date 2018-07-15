@@ -100,6 +100,9 @@ void printOp(int code, int memoryAddress){
 
         int opCode = (code & (0b11111<<11))>>11;
 
+        char name[255] = {0};
+        bool symbolsFound = false;
+
         // Some declarations
         int rb1 = (code&0b111);
         int rb2 = (code&0b111000)>>3;
@@ -288,22 +291,94 @@ void printOp(int code, int memoryAddress){
                         printf("r%d, r%d, #" YELLOW "0x%02x" RESET, rd, rm, const4);
                         break;
                 case 0b01000:
-                        printf("jz\t r%d," CYAN " 0x%02hhx" RESET, rb1, off8*2);
+                        for (int i = 0; i < symbols.addressesIn; i++){
+                                if (symbols.n_address[i] == memoryAddress + off8) {
+                                        strcpy(name, symbols.addressNames[i]);
+                                        symbolsFound = true;
+                                        break;
+                                }
+                        }
+                        printf("jz\t r%d," , rb1);
+                        if (!symbolsFound){
+                                printf(CYAN " 0x%02hhx" RESET, off8*2);
+                        }else{
+                                printf(GREEN " %s", name);
+                        }
                         break;
                 case 0b01001:
-                        printf("jnz\t r%d," CYAN " 0x%02hhx" RESET, rb1, off8*2);
+                        for (int i = 0; i < symbols.addressesIn; i++){
+                                if (symbols.e_address[i] == memoryAddress + off8*2+2) {
+                                        strcpy(name, symbols.addressNames[i]);
+                                        symbolsFound = true;
+                                        break;
+                                }
+                        }
+                        printf("jnz\t");
+                        if (!symbolsFound){
+                                printf( " r%d," CYAN " 0x%02hhx" RESET, rb1, off8*2+2);
+                        }else{
+                                printf(GREEN " %s" RESET, name);
+                        }
                         break;
                 case 0b01010:
-                        printf("jc\t r%d," CYAN " 0x%02hhx" RESET, rb1, off8*2);
+                        for (int i = 0; i < symbols.addressesIn; i++){
+                                if (symbols.e_address[i] == memoryAddress + off8*2+2) {
+                                        strcpy(name, symbols.addressNames[i]);
+                                        symbolsFound = true;
+                                        break;
+                                }
+                        }
+                        printf("jc\t");
+                        if (!symbolsFound){
+                                printf( " r%d," CYAN " 0x%02hhx" RESET, rb1, off8*2+2);
+                        }else{
+                                printf(GREEN " %s" RESET, name);
+                        }
                         break;
                 case 0b01011:
-                        printf("jnc\t r%d," CYAN " 0x%02hhx" RESET, rb1, off8*2);
+                        for (int i = 0; i < symbols.addressesIn; i++){
+                                if (symbols.e_address[i] == memoryAddress + off8*2+2) {
+                                        strcpy(name, symbols.addressNames[i]);
+                                        symbolsFound = true;
+                                        break;
+                                }
+                        }
+                        printf("jnc\t");
+                        if (!symbolsFound){
+                                printf( " r%d," CYAN " 0x%02hhx" RESET, rb1, off8*2+2);
+                        }else{
+                                printf(GREEN " %s" RESET, name);
+                        }
                         break;
                 case 0b01100:
-                        printf("jmp\t r%d," CYAN " 0x%02hhx" RESET, rb1, off8*2);
+                        for (int i = 0; i < symbols.addressesIn; i++){
+                                if (symbols.e_address[i] == memoryAddress + off8*2+2) {
+                                        strcpy(name, symbols.addressNames[i]);
+                                        symbolsFound = true;
+                                        break;
+                                }
+                        }
+                        printf("jmp\t");
+                        if (!symbolsFound){
+                                printf( " r%d," CYAN " 0x%02hhx" RESET, rb1, off8*2+2);
+                        }else{
+                                printf(GREEN " %s" RESET, name);
+                        }
                         break;
                 case 0b01101:
-                        printf("jmpl\t r%d," CYAN " 0x%02hhx" RESET, rb1, off8*2);
+                        for (int i = 0; i < symbols.addressesIn; i++){
+                                if (symbols.e_address[i] == memoryAddress + off8*2+2) {
+                                        strcpy(name, symbols.addressNames[i]);
+                                        symbolsFound = true;
+                                        break;
+                                }
+                        }
+                        printf("jmpl\t");
+                        if (!symbolsFound){
+                                printf( " r%d," CYAN " 0x%02hhx" RESET, rb1, off8*2+2);
+                        }else{
+                                printf(GREEN " %s" RESET, name);
+                        }
                         break;
                 case 0b01110:
                         printf("iret");
