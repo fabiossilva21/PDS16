@@ -11,6 +11,7 @@ This project came as a need to simulate the PDS16 ISA, but also the Interruption
   - "GDB-like" Interface
   - ASM Reassembler
   - Breakpoints
+  - GTK+ GUI (To come)
 
 ## Requirements for compilation
 
@@ -22,12 +23,15 @@ This program makes use of the following libraries:
 | OpenSSH | -lssl -lcrypto | Get the SHA1 of the filename for a future feature |
 | Threads | -lpthread | Multithreading for the "auto" command |
 
+The program also depends on the GTK+3 package to run the GTK GUI (once it's finished),
+be sure to have all the correct packages in order to compile it with success.
+
 ### Installation of the requirements
 
 For Debian-based distributions:
 
 ```sh
-$ sudo apt-get install gcc make build-essential libncurses-dev libssl-dev
+$ sudo apt-get install gcc make build-essential libncurses-dev libssl-dev libgtk-3-dev
 ```
 For other destributions:
 
