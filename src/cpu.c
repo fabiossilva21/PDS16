@@ -13,9 +13,9 @@ void writeToRam(short int value, int address){
         }else if (address >= 0xFF00 && address <= 0xFF3F){
                 pds16.nCS_Out = value;
         }else if (address >= 0xFF40 && address <= 0xFF7F){
-                pds16.nCS_EXT0 = value;
+                pds16.nCS_EXT0_Out = value;
         }else if (address >= 0xFF80 && address <= 0xFFBF){
-                pds16.nCS_EXT1 = value;
+                pds16.nCS_EXT1_Out = value;
         }else{
                 printf(RED"Failed: " RESET "Setting memory address 0x%04x! Invalid Address\n", address);
         }
@@ -28,9 +28,9 @@ short int readFromRam(int address){
         }else if (address >= 0xFF00 && address <= 0xFF3F){
                 return pds16.nCS_In;
         }else if (address >= 0xFF40 && address <= 0xFF7F){
-                return pds16.nCS_EXT0;
+                return pds16.nCS_EXT0_In;
         }else if (address >= 0xFF80 && address <= 0xFFBF){
-                return pds16.nCS_EXT1;
+                return pds16.nCS_EXT1_In;
         }else{
                 printf(RED"Failed: " RESET "Read from memory address 0x%04x! Invalid Address\n", address);
                 return 0;
@@ -65,6 +65,63 @@ void writeToRegister(int registerID, short int value){
         }
 }
 
+short int handleIO(int IOIdentifier, bool writing, short int value){
+        // 1 -> nCS_Out
+        // 2 -> nCS_In
+        // 3 -> nCS0_Out
+        // 4 -> nCS0_In
+        // 5 -> nCS1_Out
+        // 6 -> nCS1_In
+        switch(IOIdentifier){
+                case(1):
+                if (writing){
+                        pds16.nCS_Out = value;
+                        return 1;
+                }else{
+                        return pds16.nCS_Out;
+                }
+                case(2):
+                if (writing){
+                        pds16.nCS_In = value;
+                        return 1;
+                }else{
+                        return pds16.nCS_In;
+                }
+                case(3):
+                if (writing){
+                        pds16.nCS_EXT0_Out = value;
+                        return 1;
+                }else{
+                        return pds16.nCS_EXT0_Out;
+                }
+                case(4):
+                if (writing){
+                        pds16.nCS_EXT0_In = value;
+                        return 1;
+                }else{
+                        return pds16.nCS_EXT0_In;
+                }
+                case(5):
+                if (writing){
+                        pds16.nCS_EXT1_Out = value;
+                        return 1;
+                }else{
+                        return pds16.nCS_EXT1_Out;
+                }
+                break;
+                case(6):
+                if (writing){
+                        pds16.nCS_EXT1_In = value;
+                        return 1;
+                }else{
+                        return pds16.nCS_EXT1_In;
+                }
+                default:
+                sendWarning("Tried to set an un-existing IO Port");
+                return -1;
+        }
+}
+
 void dumpMemory(unsigned char * memory, long unsigned int memSize){
         FILE *fp = fopen("memory.bin", "w+");
         if(!fp) {
@@ -74,14 +131,8 @@ void dumpMemory(unsigned char * memory, long unsigned int memSize){
         for (int i = 0; i < memSize; i++ ){
                 fprintf(fp, "%c", memory[i]);
         }
-        for (int i = 0x8000; i<=0xFEFF;i++){
-                fprintf(fp, "%c", 0);
-        }
-        for (int i = 0xFF00; i<=0xFF3F;i++){
-                fprintf(fp, "%c", pds16.nCS_Out);
-        }
         sendWarning("Memory dumped sucessfully!");
-        printf(GREEN "Dumped: "RESET"%lu bytes\n", (0xFF40)*sizeof(char));
+        printf(GREEN "Dumped: "RESET"%lu bytes\n", memSize*sizeof(char));
         fclose(fp);
 }
 
@@ -114,7 +165,7 @@ void exitInterruption(){
         sendWarning("Exited the interrupt routine!");
 }
 
-void erasePDS(unsigned char * mem){
+void erasePDS(){
         sendWarning("Erasing the RAM...\n");
         int spaces = 30;
         for(int i = 0; i < MEMSIZE; i++){
@@ -130,13 +181,13 @@ void erasePDS(unsigned char * mem){
                         printf(" ");
                 }
                 printf("] %.2f%%", progress*100);
-                mem[i] = 0;
+                writeToRam(i, 0);
         }
         printf("\nRAM sucessfully erased!\n");
 
         sendWarning("Resetting the registers!\n");
         for (int i = 0; i < NUM_REGISTERS; i++){
-                pds16.registers[i] = 0;
+                writeToRegister(i, 0);
         }
         for (int i = 0; i < NUM_IREGISTERS; i++){
                 pds16.iregisters[i] = 0;
@@ -145,6 +196,19 @@ void erasePDS(unsigned char * mem){
 }
 
 void patchMemory(int address, int value, bool byte){
+        if (address >= 0xFF00 && address <= 0xFF39){
+                value = value & 0xffff;
+                handleIO(1, true, value);
+                return;
+        }else if (address >= 0xFF40 && address <= 0xFF79){
+                value = value & 0xffff;
+                handleIO(3, true, value);
+                return;
+        }else if (address >= 0xFF80 && address <= 0xFFBF){
+                value = value & 0xffff;
+                handleIO(5, true, value);
+                return;
+        }
         if ((address > 0x7fff || address < 0x0) && (address > 0xFF3F || address < 0xFF00)){
                 printf("Cannot write 0x%04x to 0x%04x\n", value,  address);
                 return;
@@ -162,7 +226,7 @@ void patchMemory(int address, int value, bool byte){
         return;
 }
 
-void programRam(unsigned char * mem, char * Line, int addressToWrite){
+void programRam(char * Line, int addressToWrite){
         int limit = (addressToWrite & 0xff0000) >> 16;
         addressToWrite = addressToWrite & 0xffff;
         // printf("Writing %d bytes to RAM Address: 0x%04x\n", limit, addressToWrite);
@@ -171,7 +235,7 @@ void programRam(unsigned char * mem, char * Line, int addressToWrite){
                 // printf("%02x ", readFromRam(addressToWrite));
                 addressToWrite++;
         }
-        printf("\n");
+        // printf("\n");
 }
 
 int getVal(char c){
@@ -207,8 +271,9 @@ int parseHexFile(unsigned char * mem, FILE *fileopened){
                 }else{
                         if(line[0] == 0 && line[1] == 0) return 1;
                         int memLoc = getAddressFromLine(line);
+                        printf("0x%04x ", memLoc);
                         i = 0;
-                        programRam(pds16.mem, line, memLoc);
+                        programRam(line, memLoc);
                 }
         }
         return 1;
@@ -223,8 +288,10 @@ void initializePDS16(){
         memset(&interruptTime, -1, sizeof(int));
         memset(&pds16.nCS_In, 0x00, sizeof(short int));
         memset(&pds16.nCS_Out, 0x00, sizeof(short int));
-        memset(&pds16.nCS_EXT0, 0x00, sizeof(short int));
-        memset(&pds16.nCS_EXT1, 0x00, sizeof(short int));
+        memset(&pds16.nCS_EXT0_In, 0x00, sizeof(short int));
+        memset(&pds16.nCS_EXT1_In, 0x00, sizeof(short int));
+        memset(&pds16.nCS_EXT0_Out, 0x00, sizeof(short int));
+        memset(&pds16.nCS_EXT1_Out, 0x00, sizeof(short int));
 }
 
 void *run(){

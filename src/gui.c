@@ -284,6 +284,12 @@ void menu(){
                 printf("\033[H\033[J");
                 menu();
         }
+        if (strcmp(option, "connect") == 0){
+                if(sscanf(input, "%s %i", option, &int1) == 2){
+                        serverStart(int1);
+                        menu();
+                }
+        }
         if (strcmp(option, "do") == 0){
                 if (fixedASM == false){
                         if (clearScreenEveryCommand){
@@ -354,7 +360,7 @@ void menu(){
                                 printf(YELLOW "File '%s' not found!\n", option);
                                 menu();
                         }
-                        erasePDS(pds16.mem);
+                        erasePDS();
                         parseHexFile(pds16.mem, file);
                         SHA1((unsigned char *)option, strlen(option), sha1);
                         for (int i = 0; i < strlen(option); i++) {
@@ -372,7 +378,7 @@ void menu(){
                                                 printf(YELLOW "File '%s' not found!\n", option);
                                                 menu();
                                         }
-                                        erasePDS(pds16.mem);
+                                        erasePDS();
                                         parseHexFile(pds16.mem, file);
                                         fclose(file);
                                         menu();

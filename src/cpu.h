@@ -40,8 +40,11 @@ typedef struct {
         short int iregisters[NUM_IREGISTERS];
         short int nCS_In;
         short int nCS_Out;
-        short int nCS_EXT0;
-        short int nCS_EXT1;
+        short int nCS_EXT0_In;
+        short int nCS_EXT1_In;
+        short int nCS_EXT0_Out;
+        short int nCS_EXT1_Out;
+
 } PDS16;
 
 PDS16 pds16;

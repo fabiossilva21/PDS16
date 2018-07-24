@@ -10,7 +10,7 @@ void sendError(char c[]){
         exit(-1);
 }
 
-void printRegisters(unsigned char * mem){
+void printRegisters(){
         bool inInterrupt = ((readFromRegister(6)&0x20) != 0) ? true : false;
         (inInterrupt) ? printf("i") : 1 ;
         printf("r0       : 0x%04hx\n", readFromRegister(0));
@@ -26,7 +26,7 @@ void printRegisters(unsigned char * mem){
         printf("r5 (LINK): 0x%04hx\n", readFromRegister(5));
         printf("r6 (PSW) : 0x%04hx ", readFromRegister(6));
         printPSW(readFromRegister(6));
-        printf("r7 (PC)  : 0x%04hx  --> (0x%04x)\n", readFromRegister(7), ((mem[readFromRegister(7)]<<8) + mem[readFromRegister(7)+1]));
+        printf("r7 (PC)  : 0x%04hx  --> (0x%04x)\n", readFromRegister(7), (readFromRam(readFromRegister(7))<<8) + readFromRam(readFromRegister(7)+1));
 }
 
 void printMem(unsigned char * mem, int memSize, int beginning, int end, unsigned char nCS_Out) {

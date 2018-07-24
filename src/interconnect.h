@@ -1,7 +1,7 @@
 // logging.c
 void sendWarning(char c[]);
 void sendError(char c[]);
-void printRegisters(unsigned char * mem);
+void printRegisters();
 void printMem(unsigned char * mem, int memSize, int beginning, int end, unsigned char nCS_Out);
 void printPSW(short int PSW);
 char * toLowerArray(char * array, int sizeArray);
@@ -10,12 +10,13 @@ void printOp(int code, int memoryAddress);
 // cpu.c
 short int readFromRegister(int registerID);
 void dumpMemory(unsigned char * memory, long unsigned int memSize);
+short int handleIO(int IOIdentifier, bool writing, short int value);
 void writeToRegister(int registerID, short int value);
 void enterInterruption();
 void exitInterruption();
-void erasePDS(unsigned char * mem);
+void erasePDS();
 void patchMemory(int address, int value, bool byte);
-void programRam(unsigned char * mem, char * Line, int addressToWrite);
+void programRam(char * Line, int addressToWrite);
 void writeToRam(short int value, int address);
 short int readFromRam(int address);
 int getVal(char c);
@@ -68,3 +69,7 @@ unsigned getTermHeight();
 void fixedASMPrinting();
 void fixedRegistersPrinting();
 void printHelp(char * commandHelp);
+
+// gui-windows.c
+void serverStart();
+void readLoop();
