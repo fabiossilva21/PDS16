@@ -127,8 +127,8 @@ void readLoop(){
 						sendMessage("OK!");
 						sprintf(message, "Successfully wrote %s at offset 0x%04x", temp, memLoc);
 						programRam(line, memLoc);
-						logToFile(message, 1);	
-					}		
+						logToFile(message, 1);
+					}
 				}else{
 					sendMessage("OK!");
 					logToFile("Done flashing RAM", 1);
@@ -154,7 +154,7 @@ void readLoop(){
 				sendMessage("OK!");
 			}
 		}
-		
+
 		if (memcmp(recvBuff, "STEP!", strlen("STEP!")) == 0){
 			int instruction = (readFromRam(readFromRegister(7))<<8)+readFromRam(readFromRegister(7)+1);
             decodeOp(instruction);
