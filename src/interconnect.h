@@ -21,7 +21,7 @@ void writeToRam(short int value, int address);
 short int readFromRam(int address);
 int getVal(char c);
 int getAddressFromLine(char * Line);
-int parseHexFile(unsigned char * mem, FILE *fileopened);
+int parseHexFile(FILE *fileopened);
 void initializePDS16();
 void *run();
 void *killThread();
@@ -54,8 +54,8 @@ void jc(int code);
 void jnc(int code);
 void jmp(int code);
 void jmpl(int code);
-void nop(int code);
-void iret(int code);
+int nop(int code);
+int iret(int code);
 
 // gui.c
 void fixedRegistersPrinting();

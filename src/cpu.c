@@ -128,7 +128,7 @@ void dumpMemory(unsigned char * memory, long unsigned int memSize){
                 sendError("Could not create memory.bin!");
         }
         sendWarning("Dumping memory to memory.bin...");
-        for (int i = 0; i < memSize; i++ ){
+        for (unsigned int i = 0; i < memSize; i++ ){
                 fprintf(fp, "%c", memory[i]);
         }
         sendWarning("Memory dumped sucessfully!");
@@ -258,7 +258,7 @@ int getAddressFromLine(char * Line){
         return number;
 }
 
-int parseHexFile(unsigned char * mem, FILE *fileopened){
+int parseHexFile(FILE *fileopened){
         int c, i = 0;
         char line[2555];
         while ((c = fgetc(fileopened)) != EOF){
@@ -284,7 +284,7 @@ void initializePDS16(){
         memset(pds16.mem, 0x00, MEMSIZE*sizeof(unsigned char));
         memset(pds16.registers, 0x00, NUM_REGISTERS*sizeof(short int));
         memset(pds16.iregisters, 0x00, NUM_IREGISTERS*sizeof(short int));
-        memset(breakpoints, 0xFFFFFFFF, (MAX_BREAKPOINTS-1)*sizeof(int));
+        memset(breakpoints, 0xFFFFFFFF, (MAX_BREAKPOINTS)*sizeof(int));
         memset(&interruptTime, -1, sizeof(int));
         memset(&pds16.nCS_In, 0x00, sizeof(short int));
         memset(&pds16.nCS_Out, 0x00, sizeof(short int));

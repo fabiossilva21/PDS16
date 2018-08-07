@@ -556,10 +556,11 @@ void jmpl(int code){
         jmp(code);
 }
 
-void nop(int code){
-        return;
+int nop(int code){
+        return code;
 }
 
-void iret(int code){
+int iret(int code){
         exitInterruption();
+        return code;
 }

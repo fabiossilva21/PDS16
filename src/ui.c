@@ -1,4 +1,4 @@
-#include "gui.h"
+#include "ui.h"
 
 void initializeGUI(){
         printf("\033[H\033[J");
@@ -20,21 +20,21 @@ void breakpointManager(int id, int address, bool adding){
         if(adding){
                 if (isOnBreakpointList(address)){
                         printf(YELLOW "Warning: " RESET "The address 0x%04x is already on the breakpoint list\n", address);
-                        menu();
+                        // return;
                 }
-                for(int i = 0; i < MAX_BREAKPOINTS-1; i++){
-                        if(breakpoints[i] == 0xFFFFFFFF){
+                for(int i = 0; i < MAX_BREAKPOINTS; i++){
+                        if(breakpoints[i] == (signed)0xFFFFFFFF){
                                 breakpoints[i] = address;
                                 printf(GREEN "Added a breakpoint at: " RESET "0x%04x\n", address);
-                                menu();
+                                return;
                         }
                 }
                 sendWarning("No more breakpoints can be added! Remove some by doing 'bd <id>', to get the ids do 'b'.");
         }else{
-                if(breakpoints[id] == 0xFFFFFFFF){
+                if(breakpoints[id] == (signed)0xFFFFFFFF){
                         printf(YELLOW"Breakpoint #%d is not set!\n"RESET, id);
                 }else{
-                        breakpoints[id] = 0xFFFFFFFF;
+                        breakpoints[id] = (signed)0xFFFFFFFF;
                         printf(GREEN "Breakpoint #%d deleted sucessfully!\n" RESET, id);
                 }
         }
@@ -249,8 +249,8 @@ void menu(){
                 // Show breakpoints
                 if (fixedASM == false){
                         printf("\nBreakpoints:\n");
-                        for (int i = 0; i < MAX_BREAKPOINTS-1; i++){
-                                if(breakpoints[i] == 0xffffffff){
+                        for (int i = 0; i < MAX_BREAKPOINTS; i++){
+                                if(breakpoints[i] == (signed)0xffffffff){
                                         printf("ID: %d = Not Set\n",i);
                                 }else{
                                         printf("ID: %d = 0x%04x\n", i, breakpoints[i]);
@@ -361,9 +361,9 @@ void menu(){
                                 menu();
                         }
                         erasePDS();
-                        parseHexFile(pds16.mem, file);
+                        parseHexFile(file);
                         SHA1((unsigned char *)option, strlen(option), sha1);
-                        for (int i = 0; i < strlen(option); i++) {
+                        for (unsigned int i = 0; i < strlen(option); i++) {
                                 printf("%x", option[i]);
                         }
                         fclose(file);
@@ -379,7 +379,7 @@ void menu(){
                                                 menu();
                                         }
                                         erasePDS();
-                                        parseHexFile(pds16.mem, file);
+                                        parseHexFile(file);
                                         fclose(file);
                                         menu();
                                 }

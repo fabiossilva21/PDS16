@@ -1,11 +1,11 @@
 #include "gui-windows.h"
 
 void logToFile(char * message, int src){
-	char copy[255] = {0};
+	char copy[1024] = {0};
 	strcpy(copy, message);
 	FILE *file = fopen("log.txt", "ab+");
 
-	if (file < 0){
+	if (file == NULL){
 		perror("\n\nFailed to open to log file. Reason");
 		exit(-1);
 	}
@@ -44,7 +44,7 @@ int waitUntilRecv(char * buff, int buffSize){
 		char err[] = "\nSomething went seriously wrong :(\nReason: Probably the client has disconnected...\n";
 		printf("%s", err);
 		logToFile(err, 1);
-		exit(-1);
+		menu();
 	}
 	logToFile(buff, 0);
 	return bytes;
@@ -56,7 +56,6 @@ void serverStart(int port){
 	memset(recvBuff, 0, sizeof(sendBuff));
 
 	server_socket = socket(AF_INET, SOCK_STREAM, 0);
-	int one = 1;
 	// setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
 
 	if (server_socket < 0){
@@ -175,5 +174,56 @@ void readLoop(){
 				sendMessage("OK!");
 			}
 		}
+
+		if (memcmp(recvBuff, "SET BREAK!", strlen("SET BREAK!")) == 0){
+			int BreakID;
+			int value;
+			if(sscanf(recvBuff, "SET BREAK! %d %i", &BreakID, &value) == 2){
+				breakpointManager(BreakID, value, true);
+				sendMessage("OK!");
+			}
+		}
+
+		if (memcmp(recvBuff, "DEL BREAK!", strlen("DEL BREAK!")) == 0){
+			int BreakID;
+			int value;
+			if(sscanf(recvBuff, "DEL BREAK! %d %i", &BreakID, &value) == 2){
+				breakpointManager(BreakID, value, false);
+				sendMessage("OK!");
+			}
+		}
+
+		if (memcmp(recvBuff, "GET MEM!", strlen("GET MEM!")) == 0){
+			int start;
+			int end;
+			char memory[110] = {0};
+			if(sscanf(recvBuff, "GET MEM! %i %i", &start, &end) == 2){
+				int a = 0;
+				for (int i = start; i <= end; i++){
+					a += sprintf(&memory[a], "%03i", readFromRam(i));
+				}
+				sendMessage("OK!");
+				sendMessage(memory);
+			}
+		}
+
+		if (memcmp(recvBuff, "AUTO!", strlen("AUTO!")) == 0){
+			// sendMessage("OK!");
+			// toEnd = false;
+			// if ((cpid = fork()) == 0){
+			// 	runG();
+			// }else{
+			// 	killThreadG();
+			// }
+			// sendMessage("OK!");
+		}
+
+
+		/*
+				pthread_create(&tids[1], NULL, killThread, NULL);
+                pthread_create(&tids[2], NULL, run, NULL);
+                pthread_join(tids[1], NULL);
+                pthread_join(tids[2], NULL);
+		*/
 	}
 }

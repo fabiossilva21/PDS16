@@ -13,7 +13,7 @@ int main(int argc, char const *argv[]) {
                 exit(1);
         }
         initializePDS16();
-        parseHexFile(pds16.mem, file);
+        parseHexFile(file);
         fclose(file);
 
         // Syms file

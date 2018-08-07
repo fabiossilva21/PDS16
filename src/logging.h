@@ -25,4 +25,7 @@ typedef struct {
         int numericsIn;
 } symbolsStruct;
 
+#define MAX_BREAKPOINTS 6
+int breakpoints[MAX_BREAKPOINTS];
+
 symbolsStruct symbols;
