@@ -208,22 +208,17 @@ void readLoop(){
 		}
 
 		if (memcmp(recvBuff, "AUTO!", strlen("AUTO!")) == 0){
-			// sendMessage("OK!");
-			// toEnd = false;
-			// if ((cpid = fork()) == 0){
-			// 	runG();
-			// }else{
-			// 	killThreadG();
-			// }
-			// sendMessage("OK!");
+			sendMessage("OK!");
+			toEnd = false;
+
+			pthread_create(&tids[1], NULL, killThread, NULL);
+			pthread_create(&tids[2], NULL, run, NULL);
+			pthread_join(tids[1], NULL);
+			
+			sendMessage("OK!");
 		}
 
 
-		/*
-				pthread_create(&tids[1], NULL, killThread, NULL);
-                pthread_create(&tids[2], NULL, run, NULL);
-                pthread_join(tids[1], NULL);
-                pthread_join(tids[2], NULL);
-		*/
+		
 	}
 }

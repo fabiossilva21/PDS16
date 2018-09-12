@@ -22,7 +22,7 @@ char sendBuff[1024] = {0};
 char recvBuff[1024] = {0};
 char message[1024] = {0};
 
-pthread_t tsids[2];
+pthread_t tids[2];
 
 int server_socket = 0, client_socket = 0, clilen = 0;
 struct sockaddr_in server_addr, client_addr;
