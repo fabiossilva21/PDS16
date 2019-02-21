@@ -216,7 +216,7 @@ void adc(int code){
         int rm = (code>>3) & 0b111;
         bool f = (code>>10) & 0b1;
         bool c = (readFromRegister(6) & 0b10)>>1;
-        if (opcode == 0x10010){
+        if (opcode == 0b10010){
                 bool r = (code>>9) & 0b1;
                 int rn = (code>>6) & 0b111;
                 if (f){
@@ -231,7 +231,7 @@ void adc(int code){
                         // Parity
                         pds16.registers[6] |= parity(readFromRegister(rm) + (readFromRegister(rn)+c))<<3;
                 }
-                if(r && rd != 6){
+                if(r && (rd != 6)){
                         writeToRegister(rd, readFromRegister(rm)+readFromRegister(rn)+c);
                 }
         }else{

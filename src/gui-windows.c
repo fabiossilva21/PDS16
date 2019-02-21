@@ -41,10 +41,10 @@ int waitUntilRecv(char * buff, int buffSize){
 	memset(buff, 0, buffSize);
 	int bytes = recv(client_socket, buff, buffSize, 0);
 	if (bytes <= 0){
-		char err[] = "\nSomething went seriously wrong :(\nReason: Probably the client has disconnected...\n";
+		char err[] = "\nSomething went seriously wrong\nReason: Probably the client has disconnected...\n";
 		printf("%s", err);
 		logToFile(err, 1);
-		menu();
+		exit(-1);
 	}
 	logToFile(buff, 0);
 	return bytes;
@@ -56,10 +56,9 @@ void serverStart(int port){
 	memset(recvBuff, 0, sizeof(sendBuff));
 
 	server_socket = socket(AF_INET, SOCK_STREAM, 0);
-	// setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
 
 	if (server_socket < 0){
-		perror("\n\nCan't open socket! Reason");
+		perror("\n\nCan't open socket!");
 		exit(-1);
 	}
 
@@ -71,7 +70,7 @@ void serverStart(int port){
 
 	if (res < 0){
 		strcpy(message, strerror(errno));
-		sprintf(message, "Can't bind socket! Reason%s", message);
+		sprintf(message, "Can't bind socket! Reason: %s", message);
 		printf("%s", message);
 		logToFile(message, 1);
 		getchar();
@@ -196,7 +195,7 @@ void readLoop(){
 		if (memcmp(recvBuff, "GET MEM!", strlen("GET MEM!")) == 0){
 			int start;
 			int end;
-			char memory[110] = {0};
+			char memory[512] = {0};
 			if(sscanf(recvBuff, "GET MEM! %i %i", &start, &end) == 2){
 				int a = 0;
 				for (int i = start; i <= end; i++){
@@ -207,6 +206,7 @@ void readLoop(){
 			}
 		}
 
+		//TODO: Fix
 		if (memcmp(recvBuff, "AUTO!", strlen("AUTO!")) == 0){
 			sendMessage("OK!");
 			toEnd = false;

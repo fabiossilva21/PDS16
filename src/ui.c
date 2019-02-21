@@ -1,6 +1,384 @@
 #include "ui.h"
 
+Hashtable * ht;
+#define HASHTABLESIZE 151
+
+// Comandos da UI
+void UIAuto(Input * i){
+        (void)i;
+        pthread_create(&tids[1], NULL, killThread, NULL);
+        pthread_create(&tids[2], NULL, run, NULL);
+        pthread_join(tids[1], NULL);
+        pthread_join(tids[2], NULL);
+        printf("\033[2J");
+}
+
+void UIBreakpoints(Input * i){
+        (void)i;
+        if (fixedASM == false){
+                printf("\nBreakpoints:\n");
+                for (int i = 0; i < MAX_BREAKPOINTS; i++){
+                        if(breakpoints[i] == (signed)0xffffffff){
+                                printf("ID: %d = Not Set\n",i);
+                        }else{
+                                printf("ID: %d = 0x%04x\n", i, breakpoints[i]);
+                        }
+                }
+        }else{
+                printf("Cannot show breakpoints while Fixed ASM option is enabled!");
+        }
+}
+
+void UIBreakCreate(Input * i){
+        int address;
+        if(sscanf(i->args, "%i", &address) == 1){
+                breakpointManager(0, address, true);
+        }else{
+                printHelp("bc");
+        }
+}
+
+void UIBreakDelete(Input * i){
+        int address;
+        if(sscanf(i->args, "%i", &address) == 1){
+                breakpointManager(0, address, true);
+        }else{
+                printHelp("bd");
+        }
+}
+
+void UIClearScreen(Input * i){
+        (void)i;
+        printf("\033[H\033[J");
+}
+
+void UIConnect(Input * i){
+        int address;
+        if(sscanf(i->args, "%i", &address) == 1){
+                serverStart(address);
+        }
+}
+
+void UIDecode(Input * i){
+        int address1, address2;
+        if (fixedASM == false){
+                if (clearScreenEveryCommand){
+                        UIClearScreen(i);
+                }
+                if (sscanf(i->args, "%i %i", &address1, &address2) == 2){
+                        address1 = address1 & 0xfffe;
+                        address2 = address2 & 0xfffe;
+                        for(int i = address1; i <= address2; i+=2){
+                                int code = (readFromRam(i)<<8)+readFromRam(i+1);
+                                printOp(code, i);
+                        }
+                }else if (sscanf(i->args, "%i", &address1) == 1){
+                        address1 = address1 & 0xfffe;
+                        for(int i = readFromRegister(7); i <= address1+readFromRegister(7); i+=2){
+                                int code = (readFromRam(i)<<8)+readFromRam(i+1);
+                                printOp(code, i);
+                        }
+                }else if (strlen(i->args) == 0){
+                        int code = (readFromRam(readFromRegister(7))<<8)+readFromRam(readFromRegister(7)+1);
+                        printf("\n\n\n");
+                        printOp(code, readFromRegister(7));
+                }else{
+                        printHelp("do");
+                        return;
+                }
+                printf("\nLegend: " YELLOW "Constants; " RED "Memory Addresses; " CYAN "Offsets*2; " RESET "(*)Breakpoints; <--- actual PC");
+        }else{
+                printf("Cannot show decoded operations while Fixed ASM is activated!");
+        }
+}
+
+void UIDump(Input * i){
+        (void)i;
+        dumpMemory(pds16.mem, MEMSIZE);
+}
+
+void UIExit(Input * i){
+        (void)i;
+        // Limpar Hashtable (superficialmente)
+        // TODO: Limpar Completamente a hashtable
+        for (int i = 0; i < ht->size; i++){
+                free(ht->table[i]);
+        }
+        free(ht);
+        exit(0);
+}
+
+void UIHelp(Input * i){
+        if(strlen(i->args) != 0){
+                printHelp(i->args);
+        }else{
+                printHelp("all");
+        }
+}
+
+void UIInterrupt(Input * i){
+        (void)i;
+        enterInterruption();
+}
+
+void UIOpenNewFile(Input * i){
+        FILE *file;
+        file = fopen(i->args, "r");
+        if(!file){
+                printf(YELLOW "File '%s' not found!\n", i->args);
+        }
+        erasePDS();
+        parseHexFile(file);
+        // TODO: Delete the remaining symbols and ASM
+
+        // SHA1((unsigned char *)i->args, strlen(i->args), sha1);
+        // for (unsigned int i = 0; i < strlen(i->args); i++) {
+        //         printf("%x", i->args[i]);
+        // }
+        fclose(file);
+}
+
+void UIPatchByte(Input * i){
+        int address, value;
+        if (sscanf(i->args, "%i %i", &address, &value) == 2){
+                patchMemory(address, value, true);
+        }else{
+                printHelp("pmb");
+        }
+}
+
+void UIPatchWord(Input * i){
+        int address, value;
+        if (sscanf(i->args, "%i %i", &address, &value) == 2){
+                patchMemory(address, value, false);
+        }else{
+                printHelp("pmw");
+        }
+}
+
+void UIPrintMemory(Input * i){
+        int address1, address2;
+        if (fixedASM == false){
+                // Memory Print
+                if(sscanf(i->args, "%i %i", &address1, &address2) == 2){
+                        printMem(pds16.mem, MEMSIZE, address1, address2, pds16.nCS_Out);
+                }else if (sscanf(i->args, "%i", &address1) == 1){
+                        printMem(pds16.mem, MEMSIZE, readFromRegister(7), address1, pds16.nCS_Out);
+                }else{
+                        printMem(pds16.mem, MEMSIZE, 0, MEMSIZE, pds16.nCS_Out);
+                }
+                printf("\n\n");
+        }else{
+                printf("Cannot print memory to screen while Fixed ASM is activated!");
+        }
+}
+
+void UIPrintSymbols(Input * i){
+        (void)i;
+        for(int i = 0; i < symbols.addressesIn; i++){
+                printf("Address symbol number %i:\n", i);
+                printf("Name: %s\n", symbols.addressNames[i]);
+                printf("Value: 0x%04x\n\n", symbols.e_address[i]);
+        }
+
+        for(int i = 0; i < symbols.numericsIn; i++){
+                printf("Numeric symbol number %i:\n", i);
+                printf("Name: %s\n", symbols.numericNames[i]);
+                printf("Value: 0x%04x\n\n", symbols.n_address[i]);
+        }
+}
+
+void UIRegisters(Input * i){
+        (void)i;
+        if (fixedASM == false && fixedRegisters == false){
+                printRegisters(pds16.mem);
+        }else{
+                printf("Cannot show registers while Fixed (ASM|Registers) option is enabled\n");
+        }
+}
+
+void UISetParameters(Input * i){
+        char parameterName[16];
+        int value;
+        if (sscanf(i->args, "%s %i", parameterName, &value) == 2){
+                if(strcmp(parameterName, "interrupttime") == 0 || strcmp(parameterName, "it") == 0){
+                        interruptTime = value;
+                        if (value == -1){
+                                printf("interruptTime has been disabled!\n");
+                                return;
+                        } else if (value > 10000){
+                                printf("Maximum value is 10 seconds.\n");
+                                return;
+                        }
+                        printf("interruptTime has been set to %dms\n", interruptTime);
+                        printf("\nSet interruptTime = -1 to disable it!\n");
+                        return;
+                }
+                if(strcmp(parameterName, "showregisters") == 0 || strcmp(parameterName, "sr") == 0 ){
+                        if (value > 0){
+                                printf("Fixed registers option has been activated!\n");
+                                fixedRegisters = true;
+                                clearScreenEveryCommand = true;
+                        }else{
+                                printf("Fixed registers option has been deactivated!\n");
+                                fixedRegisters = false;
+                                if (!fixedASM){
+                                        clearScreenEveryCommand = false;
+                                }
+                        }
+                        return;
+                }
+                if(strcmp(parameterName, "clearscreeneverycommand") == 0 || strcmp(parameterName, "csec") == 0 ){
+                        if (value > 0){
+                                printf("Clear Screen on Every Command option has been activated!\n");
+                                clearScreenEveryCommand = true;
+                        }else {
+                                if (fixedRegisters){
+                                        printf("Cannot deactivate Clear Screen on Every Command option while the Fixed Registers option is still activated");
+                                        return;
+                                }
+                                if (fixedASM){
+                                        printf("Cannot deactivate Clear Screen on Every Command option while the Fixed ASM option is still activated");
+                                        return;
+                                }
+                                printf("Clear Screen on Every Command option has been deactivated!\n");
+                                fixedRegisters = false;
+                                clearScreenEveryCommand = false;
+                        }
+                        return;
+                }
+                if(strcmp(parameterName, "showcodes") == 0 || strcmp(parameterName, "sc") == 0 ){
+                        if (value > 0){
+                                printf("Fixed ASM option has been activated!\n");
+                                fixedASM = true;
+                                clearScreenEveryCommand = true;
+                        }else{
+                                printf("Fixed ASM option has been deactivated!\n");
+                                fixedASM = false;
+                                if (!fixedRegisters){
+                                        clearScreenEveryCommand = false;
+                                }
+                        }
+                        return;
+                }
+        }
+        printHelp("set");
+}
+
+void UISetRegister(Input * i){
+      int registerID, value;
+        if (sscanf(i->args, "%d %i", &registerID, &value) == 2) {
+                if(registerID > 7 || registerID < 0){
+                        sendWarning("Tried to set a non-existant register.\n");
+                        return;
+                }
+                writeToRegister(registerID, value);
+                printf("Set r%d to 0x%04x\n", registerID, value);
+        }else{
+                printHelp("sr");
+        }
+}
+
+void UIStep(Input * i){
+        (void)i;
+        int instruction = (readFromRam(readFromRegister(7))<<8)+readFromRam(readFromRegister(7)+1);
+        decodeOp(instruction);
+}
+// Fim dos comandos da UI
+
+int hash(char * string){
+        int hash = 0;
+        for (unsigned int i = 0; i < strlen(string)-1; i++){
+                hash = ((hash << 5)+hash) + string[i]; 
+        }
+        return hash % ht->size;
+}
+
+void registerCommandHandler(char * alias, void (*function_ptr)(Input *)){
+        CommandHandler * ch = malloc(sizeof(*ch));
+        ch->command = strcpy(malloc(strlen(alias)+1), alias);
+        ch->function_ptr = function_ptr;
+        if (ht->table[hash(alias)] != NULL){
+                ch->next = ht->table[hash(alias)];
+        }
+        ht->table[hash(alias)] = ch; 
+}
+
+CommandHandler * searchCommandHandler(char * alias){
+        CommandHandler * aux = NULL;
+        for (aux = ht->table[hash(alias)]; aux != NULL; aux = aux->next){
+                if (memcmp(alias, aux->command, strlen(aux->command)+1) == 0){
+                        return aux;
+                }
+        }
+        printHelp("all");
+        return NULL;
+}
+
+void registerCommands(){
+        registerCommandHandler("a", &UIAuto);
+        registerCommandHandler("auto", &UIAuto);
+
+        registerCommandHandler("b", &UIBreakpoints);
+        registerCommandHandler("breakpoints", &UIBreakpoints);
+
+        registerCommandHandler("bc", &UIBreakCreate);
+        registerCommandHandler("bd", &UIBreakDelete);
+
+        registerCommandHandler("c", &UIClearScreen);
+        registerCommandHandler("clr", &UIClearScreen);
+        registerCommandHandler("cls", &UIClearScreen);
+        registerCommandHandler("clear", &UIClearScreen);
+
+        registerCommandHandler("do", &UIDecode);
+        registerCommandHandler("decode", &UIDecode);
+
+        registerCommandHandler("dump", &UIDump);
+
+        registerCommandHandler("h", &UIHelp);
+        registerCommandHandler("help", &UIHelp);
+
+        registerCommandHandler("connect", &UIConnect);
+        registerCommandHandler("conn", &UIConnect);
+
+        registerCommandHandler("e", &UIExit);
+        registerCommandHandler("exit", &UIExit);
+
+        registerCommandHandler("i", &UIInterrupt);
+        registerCommandHandler("int", &UIInterrupt);
+        registerCommandHandler("interrupt", &UIInterrupt);
+
+        registerCommandHandler("s", &UIStep);
+        registerCommandHandler("si", &UIStep);
+        registerCommandHandler("step", &UIStep);
+
+        registerCommandHandler("symbols", &UIPrintSymbols);
+        registerCommandHandler("sym", &UIPrintSymbols);
+
+        registerCommandHandler("set", &UISetParameters);
+
+        registerCommandHandler("pmb", &UIPatchByte);
+        registerCommandHandler("pmw", &UIPatchWord);
+
+        registerCommandHandler("print", &UIPrintMemory);
+        registerCommandHandler("pm", &UIPrintMemory);
+
+        registerCommandHandler("open", &UIOpenNewFile);
+        registerCommandHandler("onf", &UIOpenNewFile);
+
+        registerCommandHandler("sr", &UISetRegister);
+
+        registerCommandHandler("r", &UIRegisters);
+        registerCommandHandler("reg", &UIRegisters);
+        registerCommandHandler("registers", &UIRegisters);
+}
+
 void initializeGUI(){
+        ht = malloc( sizeof *ht );
+	ht->size = HASHTABLESIZE;
+	ht->table = calloc( ht->size, sizeof *ht->table );
+        registerCommands();
+
         printf("\033[H\033[J");
         fixedRegisters = true;
         clearScreenEveryCommand = true;
@@ -20,7 +398,6 @@ void breakpointManager(int id, int address, bool adding){
         if(adding){
                 if (isOnBreakpointList(address)){
                         printf(YELLOW "Warning: " RESET "The address 0x%04x is already on the breakpoint list\n", address);
-                        // return;
                 }
                 for(int i = 0; i < MAX_BREAKPOINTS; i++){
                         if(breakpoints[i] == (signed)0xFFFFFFFF){
@@ -192,27 +569,33 @@ void menu(){
         if (fixedASM && !dontPrintAnything){
                 fixedASMPrinting();
         }
+
         if (fixedRegisters && !dontPrintAnything){
                 fixedRegistersPrinting();
         }
+
         dontPrintAnything = false;
+        
         printf("\033[%dB", 1000);
         printf("\033[%dA", 2);
         printf(LIGHT_YELLOW "\n0x%04x" RESET "> ", readFromRegister(7));
+        
         char input[255] = {0};
         char option[255] = {0};
-        int int1 = 0xFFFFFFFF;
-        int int2 = 0xFFFFFFFF;
+
         if (fgets(input, sizeof(input), stdin) == NULL){
                 printf("You closed the stdin pipe... Don't press CTRL-D\n");
                 exit(-1);
         }
+        
         if (clearScreenEveryCommand){
                 printf("\033[2J");
                 printf("\033[1000A");
         }
+        
         // Let's put all to lowercase!
         toLowerArray(input, sizeof(input)/sizeof(char));
+        
         // Remember the last command!
         if(input[0] != '\n'){
                 strcpy(lastcommand, input);
@@ -221,290 +604,22 @@ void menu(){
         }
 
         /************************ COMMANDS ***************************/
-        if(sscanf(input, "%s", option) != 1){
-        }
-        if (option[0] == 'a') {
-                pthread_create(&tids[1], NULL, killThread, NULL);
-                pthread_create(&tids[2], NULL, run, NULL);
-                pthread_join(tids[1], NULL);
-                pthread_join(tids[2], NULL);
-                printf("\033[2J");
-                menu();
-        }
-        if (option[0] == 'e') exit(0);
-        if (option[0] == 'i'){
-                enterInterruption();
-                menu();
-        }
-        if (option[0] == 'r'){
-                if (fixedASM == false && fixedRegisters == false){
-                        printRegisters(pds16.mem);
-                        menu();
-                }else{
-                        printf("Cannot show registers while Fixed (ASM|Registers) option is enabled\n");
-                        menu();
-                }
-        }
-        if (strcmp(option, "b") == 0){
-                // Show breakpoints
-                if (fixedASM == false){
-                        printf("\nBreakpoints:\n");
-                        for (int i = 0; i < MAX_BREAKPOINTS; i++){
-                                if(breakpoints[i] == (signed)0xffffffff){
-                                        printf("ID: %d = Not Set\n",i);
-                                }else{
-                                        printf("ID: %d = 0x%04x\n", i, breakpoints[i]);
-                                }
-                        }
-                        menu();
-                }else{
-                        printf("Cannot show breakpoints while Fixed ASM option is enabled!");
-                        menu();
-                }
-        }
-        if (strcmp(option, "bc") == 0){
-                if(sscanf(input, "%s %i", option, &int1) == 2){
-                        breakpointManager(0, int1, true);
-                        menu();
-                }else{
-                        printHelp("bc");
-                        menu();
-                }
-        }
-        if (strcmp(option, "bd") == 0){
-                if(sscanf(input, "%s %i", option, &int1) == 2){
-                        breakpointManager(int1, 0, false);
-                        menu();
-                }else{
-                        printHelp("bd");
-                        menu();
-                }
-        }
-        if (strcmp(option, "clear") == 0){
-                printf("\033[H\033[J");
-                menu();
-        }
-        if (strcmp(option, "connect") == 0){
-                if(sscanf(input, "%s %i", option, &int1) == 2){
-                        serverStart(int1);
-                        menu();
-                }
-        }
-        if (strcmp(option, "do") == 0){
-                if (fixedASM == false){
-                        if (clearScreenEveryCommand){
-                                printf("\033[%dA", 1000);
-                                printf("\033[%dB", lines/2-18);
-                        }
-                        if (sscanf(input, "%s %i %i", option, &int1, &int2) == 3){
-                                int1 = int1 & 0xfffe;
-                                for(int i = int1; i <= int2; i+=2){
-                                        int code = (readFromRam(i)<<8)+readFromRam(i+1);
-                                        printOp(code, i);
-                                }
-                        }else if (sscanf(input, "%s %i", option, &int1) == 2){
-                                int1 = int1 & 0xfffe;
-                                for(int i = readFromRegister(7); i <= int1+readFromRegister(7); i+=2){
-                                        int code = (readFromRam(i)<<8)+readFromRam(i+1);
-                                        printOp(code, i);
-                                }
-                        }else {
-                                for (int i = readFromRegister(7); i <= readFromRegister(7)+2; i+=2){
-                                        int code = (readFromRam(readFromRegister(7))<<8)+readFromRam(readFromRegister(7)+1);
-                                        printOp(code, readFromRegister(7));
-                                }
-                        }
-                        if (clearScreenEveryCommand){
-                                printf("\033[%dA", 2);
-                        }
-                        printf("\nLegend: " YELLOW "Constants; " RED "Memory Addresses; " CYAN "Offsets*2; " RESET "(*)Breakpoints; <--- actual PC");
-                        menu();
-                }else {
-                        printf("Cannot show decoded operations while Fixed ASM is activated!");
-                        menu();
-                }
-        }
-        if (strcmp(option, "dump") == 0){
-                dumpMemory(pds16.mem, MEMSIZE);
-                menu();
-        }
-        if (strcmp(option, "help") == 0){
-                if(sscanf(input, "%s %s", option, option) == 2){
-                        printHelp(option);
-                }else{
-                        printHelp("all");
-                }
-                menu();
-        }
-        if (strcmp(option, "mp") == 0){
-                if (fixedASM == false){
-                        // Memory Print
-                        if(sscanf(input, "%s %i %i", option, &int1, &int2) == 3){
-                                printMem(pds16.mem, MEMSIZE, int1, int2, pds16.nCS_Out);
-                        }else if (sscanf(input, "%s %i", option, &int1) == 2){
-                                printMem(pds16.mem, MEMSIZE, readFromRegister(7), int1, pds16.nCS_Out);
-                        }else{
-                                printMem(pds16.mem, MEMSIZE, 0, MEMSIZE, pds16.nCS_Out);
-                        }
-                        menu();
-                }else{
-                        printf("Cannot print memory to screen while Fixed ASM is activated!");
-                        menu();
-                }
-        }
-        if (strcmp(option, "onf") == 0){
-                if(sscanf(input, "%s %s", option, option) == 2){
-                        FILE *file;
-                        file = fopen(option, "r");
-                        if(!file){
-                                printf(YELLOW "File '%s' not found!\n", option);
-                                menu();
-                        }
-                        erasePDS();
-                        parseHexFile(file);
-                        SHA1((unsigned char *)option, strlen(option), sha1);
-                        for (unsigned int i = 0; i < strlen(option); i++) {
-                                printf("%x", option[i]);
-                        }
-                        fclose(file);
-                        menu();
-                }else{
-                        printf("Please specify the name of the file: ");
-                        if (fgets(input, sizeof(input), stdin) != NULL){
-                                if(sscanf(input, "%s", option) == 1){
-                                        FILE *file;
-                                        file = fopen(option, "r");
-                                        if(!file){
-                                                printf(YELLOW "File '%s' not found!\n", option);
-                                                menu();
-                                        }
-                                        erasePDS();
-                                        parseHexFile(file);
-                                        fclose(file);
-                                        menu();
-                                }
-                        }
-                }
-        }
-        if (strcmp(option, "pmb") == 0){
-                // Patch memory byte
-                if (sscanf(input, "%s %i %i", option, &int1, &int2) == 3){
-                        patchMemory(int1, int2, true);
-                }else{
-                        printHelp("pmb");
-                }
-                menu();
-        }
-        if (strcmp(option, "pmw") == 0){
-                // Patch memory word
-                if (sscanf(input, "%s %i %i", option, &int1, &int2) == 3){
-                        patchMemory(int1, int2, false);
-                }else{
-                        printHelp("pmw");
-                }
-                menu();
-        }
-        if ((strcmp(option, "s") && strcmp(option, "si")) == 0){
-                // Single Step
-                int instruction = (readFromRam(readFromRegister(7))<<8)+readFromRam(readFromRegister(7)+1);
-                decodeOp(instruction);
-                menu();
-        }
-        if (strcmp(option, "symbols") == 0){
-                for(int i = 0; i < symbols.addressesIn; i++){
-                        printf("Address symbol number %i:\n", i);
-                        printf("Name: %s\n", symbols.addressNames[i]);
-                        printf("Value: 0x%04x\n\n", symbols.e_address[i]);
-                }
+        if (sscanf(input, "%s", option) != 1){
 
-                for(int i = 0; i < symbols.numericsIn; i++){
-                        printf("Numeric symbol number %i:\n", i);
-                        printf("Name: %s\n", symbols.numericNames[i]);
-                        printf("Value: 0x%04x\n\n", symbols.n_address[i]);
-                }
-                menu();
         }
-        if (strcmp(option, "set") == 0){
-                if (sscanf(input, "%s %s %i", option, option, &int1) == 3){
-                        if(strcmp(option, "interrupttime") == 0 || strcmp(option, "it") == 0){
-                                interruptTime = int1;
-                                if (int1 == -1){
-                                        printf("interruptTime has been disabled!\n");
-                                        menu();
-                                } else if (int1 > 10000){
-                                        printf("Maximum value is 10 seconds.\n");
-                                        menu();
-                                }
-                                printf("interruptTime has been set to %dms\n", interruptTime);
-                                printf("\nSet interruptTime = -1 to disable it!\n");
-                                menu();
-                        }
-                        if(strcmp(option, "showregisters") == 0 || strcmp(option, "sr") == 0 ){
-                                if (int1 > 0){
-                                        printf("Fixed registers option has been activated!\n");
-                                        fixedRegisters = true;
-                                        clearScreenEveryCommand = true;
-                                }else{
-                                        printf("Fixed registers option has been deactivated!\n");
-                                        fixedRegisters = false;
-                                        if (!fixedASM){
-                                                clearScreenEveryCommand = false;
-                                        }
-                                }
-                                menu();
-                        }
-                        if(strcmp(option, "clearscreeneverycommand") == 0 || strcmp(option, "csec") == 0 ){
-                                if (int1 > 0){
-                                        printf("Clear Screen on Every Command option has been activated!\n");
-                                        clearScreenEveryCommand = true;
-                                }else {
-                                        if (fixedRegisters){
-                                                printf("Cannot deactivate Clear Screen on Every Command option while the Fixed Registers option is still activated");
-                                                menu();
-                                        }
-                                        if (fixedASM){
-                                                printf("Cannot deactivate Clear Screen on Every Command option while the Fixed ASM option is still activated");
-                                                menu();
-                                        }
-                                        printf("Clear Screen on Every Command option has been deactivated!\n");
-                                        fixedRegisters = false;
-                                        clearScreenEveryCommand = false;
-                                }
-                                menu();
-                        }
-                        if(strcmp(option, "showcodes") == 0 || strcmp(option, "sc") == 0 ){
-                                if (int1 > 0){
-                                        printf("Fixed ASM option has been activated!\n");
-                                        fixedASM = true;
-                                        clearScreenEveryCommand = true;
-                                }else{
-                                        printf("Fixed ASM option has been deactivated!\n");
-                                        fixedASM = false;
-                                        if (!fixedRegisters){
-                                                clearScreenEveryCommand = false;
-                                        }
-                                }
-                                menu();
-                        }
-                }
-                printHelp("set");
-                menu();
+        Input * newInput = malloc(sizeof *newInput);
+        newInput->command = strcpy(malloc(strlen(option)+1), option);
+        newInput->args = strcpy(malloc(strlen(input+strlen(option)+1)+1), input+strlen(option)+1);
+        newInput->args[strlen(newInput->args)-1] = '\0';
+
+        CommandHandler * ch = searchCommandHandler(newInput->command);
+        if (ch != NULL){
+                ch->function_ptr(newInput);
         }
-        if (strcmp(option, "sr") == 0){
-                if (sscanf(input, "%s %d %i", option, &int1, &int2) == 3) {
-                       if(int1 > 7 || int1 < 0){
-                               sendWarning("Tried to set a non-existant register.\n");
-                               menu();
-                       }
-                       writeToRegister(int1, int2);
-                       printf("Set r%d to 0x%04x\n", int1, int2);
-               }else{
-                       printHelp("sr");
-               }
-                menu();
-        }
-        printHelp("all");
-        printf("\nThe command '%s' is unknown!\n", option);
+
+        free(newInput->command);
+        free(newInput->args);
+        free(newInput);
         menu();
 }
 
@@ -578,27 +693,27 @@ void printHelp(char * commandHelp){
                 printf("\n\tSingle Step - Increments PC and executes an operation\n\n\tSyntax: s or si\n");
         }else if (strcmp(commandHelp, "set") == 0){
                 printf("\n\tSet - Sets simulator-related options.\n\n");
-                printf("\tAvailable Options:\n");
-                printf("\tInterruptTime - While in autorun it simulates nINT to 0. In miliseconds\n");
-                printf("\t              - Usage: set (interrupttime|it) <time>");
-                printf("\t              - Range: 0 to 10000ms\n");
-                printf("\t              - Default: -1");
-                printf("\t              - Deactivation: Set to -1\n\n");
-                printf("\tShowRegisters - Fixes a small 'Window' to the right with the registers\n");
-                printf("\t              - Usage: set (showregisters|sr) <value>");
-                printf("\t              - Range: 0 or 1\n");
-                printf("\t              - Default: 1");
-                printf("\t              - Deactivation: Set to 0\n\n");
-                printf("\tClearScreenEveryCommand - Everytime a command is executed it cleans the screen\n");
-                printf("\t                        - Usage: set (clearscreeneverycommand|csec) <value>");
-                printf("\t                        - Range: 0 or 1\n");
-                printf("\t                        - Default: 1");
-                printf("\t                        - Deactivation: Set to 0\n\n");
-                printf("\tShowCodes - Prints, on the middle of the screen, an attempt of the reconstruction of the ASM\n");
-                printf("\t                        - Usage: set (showcodes|sc) <value>");
-                printf("\t                        - Range: 0 or 1\n");
-                printf("\t                        - Default: -0");
-                printf("\t                        - Deactivation: Set to 0\n\n");
+                printf("\tAvailable Options:\n\n");
+                printf("\tInterruptTime             - While in autorun it sets nINT to 0 every <time> miliseconds\n");
+                printf("\t                          - Usage: set (interrupttime|it) <time>\n");
+                printf("\t                          - Range: 0 to 10000ms\n");
+                printf("\t                          - Default: -1\n");
+                printf("\t                          - Deactivation: Set to -1\n\n");
+                printf("\tShowRegisters             - Fixes a small 'Window' to the right with the registers\n");
+                printf("\t                          - Usage: set (showregisters|sr) <value>\n");
+                printf("\t                          - Range: 0 or 1\n");
+                printf("\t                          - Default: 1\n");
+                printf("\t                          - Deactivation: Set to 0\n\n");
+                printf("\tClearScreenEveryCommand   - Everytime a command is executed it cleans the screen\n");
+                printf("\t                          - Usage: set (clearscreeneverycommand|csec) <value>\n");
+                printf("\t                          - Range: 0 or 1\n");
+                printf("\t                          - Default: 1\n");
+                printf("\t                          - Deactivation: Set to 0\n\n");
+                printf("\tShowCodes                 - Prints, on the middle of the screen, an attempt of the reconstruction of the ASM\n");
+                printf("\t                          - Usage: set (showcodes|sc) <value>\n");
+                printf("\t                          - Range: 0 or 1\n");
+                printf("\t                          - Default: -0\n");
+                printf("\t                          - Deactivation: Set to 0\n\n");
 
         }else if (strcmp(commandHelp, "sr") == 0){
                 printf("\n\tSet Register - Sets register r<id> to <value>\n\n\tSyntax: sr <id> <value>\n");
