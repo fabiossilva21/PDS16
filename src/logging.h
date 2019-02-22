@@ -1,3 +1,5 @@
+#ifndef _LOGGING_H_
+#define _LOGGING_H_
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -29,3 +31,5 @@ typedef struct {
 int breakpoints[MAX_BREAKPOINTS];
 
 symbolsStruct symbols;
+
+#endif

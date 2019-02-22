@@ -1,3 +1,6 @@
+#ifndef _CPU_H_
+#define _CPU_H_
+
 #include <pthread.h>
 #include <math.h>
 #include <unistd.h>
@@ -46,3 +49,5 @@ typedef struct {
 } PDS16;
 
 PDS16 pds16;
+
+#endif

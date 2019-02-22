@@ -1,4 +1,4 @@
-#include "gui-windows.h"
+#include "gui.h"
 
 void logToFile(char * message, int src){
 	char copy[1024] = {0};

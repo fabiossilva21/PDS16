@@ -1,3 +1,6 @@
+#ifndef _UI_H_
+#define _UI_H_
+
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <term.h>
@@ -31,3 +34,5 @@ pthread_t tids[2];
 unsigned char sha1[SHA_DIGEST_LENGTH];
 
 void printHelp(char * commandHelp);
+
+#endif

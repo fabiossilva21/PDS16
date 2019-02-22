@@ -1,3 +1,5 @@
+#ifndef _INTERCONNECT_H_
+#define _INTERCONNECT_H_
 // logging.c
 void sendWarning(char c[]);
 void sendError(char c[]);
@@ -73,3 +75,5 @@ void printHelp(char * commandHelp);
 // gui-windows.c
 void serverStart();
 void readLoop();
+
+#endif

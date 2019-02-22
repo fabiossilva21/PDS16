@@ -229,13 +229,10 @@ void patchMemory(int address, int value, bool byte){
 void programRam(char * Line, int addressToWrite){
         int limit = (addressToWrite & 0xff0000) >> 16;
         addressToWrite = addressToWrite & 0xffff;
-        // printf("Writing %d bytes to RAM Address: 0x%04x\n", limit, addressToWrite);
         for (int i = 8; i < limit*2+8; i+=2){
                 writeToRam(Line[i]*16+Line[i+1], addressToWrite);
-                // printf("%02x ", readFromRam(addressToWrite));
                 addressToWrite++;
         }
-        // printf("\n");
 }
 
 int getVal(char c){

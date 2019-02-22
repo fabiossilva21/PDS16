@@ -1,3 +1,6 @@
+#ifndef _GUI_H_
+#define _GUI_H_
+
 #define _GNU_SOURCE
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -26,3 +29,5 @@ pthread_t tids[2];
 
 int server_socket = 0, client_socket = 0, clilen = 0;
 struct sockaddr_in server_addr, client_addr;
+
+#endif
