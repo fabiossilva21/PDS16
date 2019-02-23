@@ -56,3 +56,7 @@ $ make
 ### Development
 
 If you want to contribute, feel free to drop suggestions on the [Issues](https://github.com/fabiossilva21/PDS16/issues) sub-page here on Github. If you have a fix for an Issue or you find a certain alteration to the code makes the program better, feel free to make a [Pull Request](https://github.com/fabiossilva21/PDS16/pulls).
+
+## License
+
+Licensed under the [MIT License](LICENSE).

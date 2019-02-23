@@ -1,6 +1,6 @@
 #include "ui.h"
 
-Hashtable * ht;
+static Hashtable * ht;
 #define HASHTABLESIZE 151
 
 // Comandos da UI
@@ -198,7 +198,7 @@ void UIRegisters(Input * i){
 }
 
 void UISetParameters(Input * i){
-        char parameterName[16];
+        char parameterName[32];
         int value;
         if (sscanf(i->args, "%s %i", parameterName, &value) == 2){
                 if(strcmp(parameterName, "interrupttime") == 0 || strcmp(parameterName, "it") == 0){
