@@ -1,5 +1,8 @@
 #ifndef _INTERCONNECT_H_
 #define _INTERCONNECT_H_
+
+// TODO: Get rid of this entire file
+
 // logging.c
 void sendWarning(char c[]);
 void sendError(char c[]);

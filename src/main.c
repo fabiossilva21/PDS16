@@ -1,5 +1,7 @@
 #include "main.h"
 
+// TODO: Clean this file
+
 int main(int argc, char const *argv[]) {
         initializeGUI();
 
@@ -44,9 +46,10 @@ int main(int argc, char const *argv[]) {
 }
 
 // TODO: Criar suporte para novos ficheiros DONE
-// TODO: Criar um novo menu KINDA
+// TODO: Criar um novo menu KINDA DONE
 // TODO: Disassemble DONE
 // TODO: Dump memory to a file DONE
-// TODO: Separar e melhor hierarquia dos ficheiros KINDA
-// TODO: Melhorar a implementação do ISA KINDA
+// TODO: Separar e melhor hierarquia dos ficheiros MEH
+// TODO: Melhorar a implementação do ISA KINDA DONE
 // TODO: Patch Memory DONE
+// TODO: Do all the TODOs

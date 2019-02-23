@@ -1,5 +1,7 @@
 #include "gui.h"
 
+// TODO: Rewrite the entire GUI network handler
+
 void logToFile(char * message, int src){
 	char copy[1024] = {0};
 	strcpy(copy, message);

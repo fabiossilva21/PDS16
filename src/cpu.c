@@ -1,5 +1,6 @@
 #include "microcode.h"
 
+// TODO: Remove these 2 and put them in their respective file (ui.c)
 bool breakpointHit = false;
 
 float timedifference_msec(struct timeval t0, struct timeval t1){
@@ -122,6 +123,7 @@ short int handleIO(int IOIdentifier, bool writing, short int value){
         }
 }
 
+// TODO: Put this in the ui.c since this is a feature of the ui and not the CPU
 void dumpMemory(unsigned char * memory, long unsigned int memSize){
         FILE *fp = fopen("memory.bin", "w+");
         if(!fp) {
@@ -165,6 +167,8 @@ void exitInterruption(){
         sendWarning("Exited the interrupt routine!");
 }
 
+// TODO: Clean these function (do the memset or just remove this entire function
+//       and use the initializePDS16
 void erasePDS(){
         sendWarning("Erasing the RAM...\n");
         int spaces = 30;
@@ -235,6 +239,7 @@ void programRam(char * Line, int addressToWrite){
         }
 }
 
+// TODO: Next 3 functions on their respective .c
 int getVal(char c){
         int rtVal = 0;
 
@@ -281,8 +286,10 @@ void initializePDS16(){
         memset(pds16.mem, 0x00, MEMSIZE*sizeof(unsigned char));
         memset(pds16.registers, 0x00, NUM_REGISTERS*sizeof(short int));
         memset(pds16.iregisters, 0x00, NUM_IREGISTERS*sizeof(short int));
+        // TODO: Remove these and put them in their respective file
         memset(breakpoints, 0xFFFFFFFF, (MAX_BREAKPOINTS)*sizeof(int));
         memset(&interruptTime, -1, sizeof(int));
+
         memset(&pds16.nCS_In, 0x00, sizeof(short int));
         memset(&pds16.nCS_Out, 0x00, sizeof(short int));
         memset(&pds16.nCS_EXT0_In, 0x00, sizeof(short int));
@@ -291,6 +298,7 @@ void initializePDS16(){
         memset(&pds16.nCS_EXT1_Out, 0x00, sizeof(short int));
 }
 
+// TODO: Put this in is respective file (ui.c)
 void *run(){
         breakpointHit = false;
         struct timeval t0;
@@ -321,6 +329,7 @@ void *run(){
         }
 }
 
+// TODO: Put this in is respective file (ui.c)
 void *killThread(){
         char ch[255];
         while(1){

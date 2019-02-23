@@ -9,8 +9,8 @@ void decodeOp(unsigned int code){
         op[0b00001] = (void *) ldih;
         op[0b00010] = (void *) ld;
         op[0b00011] = (void *) ld;
-        op[0b00100] = 0;
-        op[0b00101] = 0;
+        op[0b00100] = NULL;
+        op[0b00101] = NULL;
         op[0b00110] = (void *) st;
         op[0b00111] = (void *) st;
         op[0b01000] = (void *) jz;
@@ -35,11 +35,11 @@ void decodeOp(unsigned int code){
         op[0b11011] = (void *) not;
         op[0b11100] = (void *) shl;
         op[0b11101] = (void *) shr;
-        op[0b11110] = 0;
+        op[0b11110] = NULL;
         op[0b11111] = (void *) rr;
 
-        if (op[opCode] == 0){
-                printf(RED "OpCode not recognized %x\n" RESET, opCode);
+        if (op[opCode] == NULL){
+                printf(RED "OpCode not recognized %x\n Program end" RESET, opCode);
                 exit(-1);
         }
 
