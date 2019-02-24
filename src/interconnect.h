@@ -7,25 +7,23 @@
 void sendWarning(char c[]);
 void sendError(char c[]);
 void printRegisters();
-void printMem(unsigned char * mem, int memSize, int beginning, int end, unsigned char nCS_Out);
+void printMem(unsigned char *mem, int memSize, int beginning, int end, unsigned char nCS_Out);
 void printPSW(short int PSW);
-char * toLowerArray(char * array, int sizeArray);
+char *toLowerArray(char *array, int sizeArray);
 void printOp(int code, int memoryAddress);
 
 // cpu.c
 short int readFromRegister(int registerID);
-void dumpMemory(unsigned char * memory, long unsigned int memSize);
 short int handleIO(int IOIdentifier, bool writing, short int value);
 void writeToRegister(int registerID, short int value);
 void enterInterruption();
 void exitInterruption();
-void erasePDS();
 void patchMemory(int address, int value, bool byte);
-void programRam(char * Line, int addressToWrite);
+void programRam(char *Line, int addressToWrite);
 void writeToRam(short int value, int address);
 short int readFromRam(int address);
 int getVal(char c);
-int getAddressFromLine(char * Line);
+int getAddressFromLine(char *Line);
 int parseHexFile(FILE *fileopened);
 void initializePDS16();
 void *run();
@@ -62,7 +60,7 @@ void jmpl(int code);
 int nop(int code);
 int iret(int code);
 
-// gui.c
+// ui.c
 void fixedRegistersPrinting();
 bool isOnBreakpointList(int address);
 void breakpointManager(int id, int address, bool adding);
@@ -73,9 +71,9 @@ unsigned getTermWidth();
 unsigned getTermHeight();
 void fixedASMPrinting();
 void fixedRegistersPrinting();
-void printHelp(char * commandHelp);
+void printHelp(char *commandHelp);
 
-// gui-windows.c
+// gui.c
 void serverStart();
 void readLoop();
 

@@ -9,20 +9,23 @@
 #include "microcode.h"
 #include <openssl/sha.h>
 
-typedef struct{
-    char * command;
-    char * args;
-}Input;
+typedef struct
+{
+    char *command;
+    char *args;
+} Input;
 
-typedef struct CommandHandler{
-    struct CommandHandler * next;
-    char * command;
+typedef struct CommandHandler
+{
+    struct CommandHandler *next;
+    char *command;
     void (*function_ptr)(Input *);
-}CommandHandler;
+} CommandHandler;
 
-typedef struct{
-	size_t size;
-	CommandHandler **table;
+typedef struct
+{
+    size_t size;
+    CommandHandler **table;
 } Hashtable;
 
 bool fixedRegisters;
@@ -33,6 +36,6 @@ char lastcommand[255];
 pthread_t tids[2];
 unsigned char sha1[SHA_DIGEST_LENGTH];
 
-void printHelp(char * commandHelp);
+void printHelp(char *commandHelp);
 
 #endif
