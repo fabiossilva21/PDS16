@@ -28,10 +28,6 @@ typedef struct
     CommandHandler **table;
 } Hashtable;
 
-bool fixedRegisters;
-bool fixedASM;
-bool clearScreenEveryCommand;
-bool dontPrintAnything;
 char lastcommand[255];
 pthread_t tids[2];
 unsigned char sha1[SHA_DIGEST_LENGTH];

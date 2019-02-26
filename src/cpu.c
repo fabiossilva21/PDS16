@@ -48,7 +48,7 @@ short int readFromRam(int address)
     {
         printf(RED "Failed: " RESET "Read from memory address 0x%04x! Invalid Address.\n", address);
         printf("Program ended.\n");
-        exit(-1);
+        //exit(-1);
         return 0;
     }
 }

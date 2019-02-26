@@ -5,7 +5,11 @@ static Hashtable *ht;
 
 static bool breakpointHit = false;
 static bool runToBeKilled;
-static int interruptTime;
+static bool fixedRegisters = true;
+static bool fixedASM = false;
+static bool clearScreenEveryCommand = true;
+static bool dontPrintAnything = false;
+static int interruptTime = -1;
 
 float timedifference_msec(struct timeval t0, struct timeval t1)
 {
@@ -264,6 +268,8 @@ void UIOpenNewFile(Input *i)
     initializePDS16();
     // Clear the breakpoints
     memset(breakpoints, 0xFFFFFFFF, (MAX_BREAKPOINTS) * sizeof(int));
+	fixedASM = false;
+	fixedRegisters = true;
     parseHexFile(file);
     // TODO: Delete the remaining symbols and ASM
 
@@ -981,21 +987,25 @@ void printHelp(char *commandHelp)
         printf("\t                          - Usage: set (interrupttime|it) <time>\n");
         printf("\t                          - Range: 0 to 10000ms\n");
         printf("\t                          - Default: -1\n");
+		printf("\t                          - Value: %d\n", interruptTime);
         printf("\t                          - Deactivation: Set to -1\n\n");
         printf("\tShowRegisters             - Fixes a small 'Window' to the right with the registers\n");
         printf("\t                          - Usage: set (showregisters|sr) <value>\n");
         printf("\t                          - Range: 0 or 1\n");
         printf("\t                          - Default: 1\n");
+		printf("\t                          - Value: %d\n", fixedRegisters);
         printf("\t                          - Deactivation: Set to 0\n\n");
         printf("\tClearScreenEveryCommand   - Everytime a command is executed it cleans the screen\n");
         printf("\t                          - Usage: set (clearscreeneverycommand|csec) <value>\n");
         printf("\t                          - Range: 0 or 1\n");
         printf("\t                          - Default: 1\n");
+		printf("\t                          - Value: %d\n", clearScreenEveryCommand);
         printf("\t                          - Deactivation: Set to 0\n\n");
         printf("\tShowCodes                 - Prints, on the middle of the screen, an attempt of the reconstruction of the ASM\n");
         printf("\t                          - Usage: set (showcodes|sc) <value>\n");
         printf("\t                          - Range: 0 or 1\n");
-        printf("\t                          - Default: -0\n");
+        printf("\t                          - Default: 0\n");
+		printf("\t                          - Value: %d\n", fixedASM);
         printf("\t                          - Deactivation: Set to 0\n\n");
     }
     else if (strcmp(commandHelp, "sr") == 0)
